@@ -1,0 +1,15 @@
+{
+ "name": "Plot & Season \u2014 Garden Manager",
+ "short_name": "Garden",
+ "start_url": "./garden-manager.html",
+ "display": "standalone",
+ "background_color": "#EFE9DC",
+ "theme_color": "#3D6C38",
+ "icons": [
+  {
+   "src": "garden-icon.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  }
+ ]
+}

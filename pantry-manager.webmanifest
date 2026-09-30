@@ -1,0 +1,15 @@
+{
+ "name": "Shelf & Weeks \u2014 Home Pantry",
+ "short_name": "Pantry",
+ "start_url": "./pantry-manager.html",
+ "display": "standalone",
+ "background_color": "#EFE9DC",
+ "theme_color": "#7A4E2A",
+ "icons": [
+  {
+   "src": "pantry-icon.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  }
+ ]
+}
