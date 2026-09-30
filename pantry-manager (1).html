@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shelf &amp; Weeks — Home Pantry Manager</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pantry">
+<meta name="theme-color" content="#7A4E2A">
+<link rel="apple-touch-icon" href="pantry-icon.png">
+<link rel="icon" href="pantry-icon.png">
+<link rel="manifest" href="pantry-manager.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EFE9DC; --panel:#FBF9F3; --panel-2:#F3EEE2; --ink:#241E16; --muted:#6B6250; --line:#D6CDB8;
+  --moss:#7A4E2A; --moss-ink:#FBF4E8; --moss-soft:#EAD9C3;
+  --sun:#E5B23A; --sun-soft:#FBEFCB; --alert:#C2432B; --alert-soft:#F7D9D2; --water:#3B7CA3; --water-soft:#D5E6F0; --good:#3D6C38; --good-soft:#D9E7CF;
+  --shadow:0 1px 2px rgba(36,30,22,.08),0 8px 24px rgba(36,30,22,.08); --r:10px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1A1612; --panel:#25201A; --panel-2:#2E271F; --ink:#EDE6D8; --muted:#A99E8A; --line:#463C30;
+  --moss:#C9955F; --moss-ink:#1A1410; --moss-soft:#4A3625;
+  --sun:#E8B848; --sun-soft:#4A3C15; --alert:#E0644C; --alert-soft:#4B231B; --water:#6AA7CF; --water-soft:#1D3242; --good:#7FB574; --good-soft:#2C4028;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  --bg:#1A1612; --panel:#25201A; --panel-2:#2E271F; --ink:#EDE6D8; --muted:#A99E8A; --line:#463C30;
+  --moss:#C9955F; --moss-ink:#1A1410; --moss-soft:#4A3625;
+  --sun:#E8B848; --sun-soft:#4A3C15; --alert:#E0644C; --alert-soft:#4B231B; --water:#6AA7CF; --water-soft:#1D3242; --good:#7FB574; --good-soft:#2C4028;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%}
+body{margin:0; height:100%; background:var(--bg); color:var(--ink); font:15px/1.5 "Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+h1,h2,h3,h4{font-family:"Fraunces",Georgia,"Times New Roman",serif; font-weight:600; letter-spacing:-.01em; margin:0}
+h1{font-size:1.5rem} h2{font-size:1.25rem} h3{font-size:1.05rem}
+p{margin:0 0 .6em}
+button{font:inherit; color:inherit; cursor:pointer; border:1px solid var(--line); background:var(--panel); border-radius:8px; padding:.45em .85em; line-height:1.2}
+button:hover{border-color:var(--muted)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
+button.primary{background:var(--moss); color:var(--moss-ink); border-color:var(--moss); font-weight:700}
+button.primary:hover{filter:brightness(1.08)}
+button.danger{color:var(--alert); border-color:var(--alert)}
+button.ghost{background:transparent; border-color:transparent}
+button.ghost:hover{background:var(--panel-2); border-color:transparent}
+button.small{padding:.3em .6em; font-size:.85rem}
+button.tiny{padding:.15em .5em; font-size:.8rem}
+button:disabled{opacity:.45; cursor:not-allowed}
+input,select,textarea{font:inherit; color:inherit; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:.45em .6em; width:100%}
+textarea{min-height:70px; resize:vertical}
+label{display:block; font-weight:600; font-size:.9rem; margin:.7em 0 .25em}
+label .hint{font-weight:400; color:var(--muted)}
+.row{display:flex; gap:.6em; align-items:center; flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:.6em}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:.6em}
+.muted{color:var(--muted)} .tiny{font-size:.8rem}
+.stack>*+*{margin-top:.75em}
+hr{border:0; border-top:1px solid var(--line); margin:1em 0}
+.check{display:flex; align-items:center; gap:.5em; margin:.35em 0; font-weight:600; cursor:pointer}
+.check input{width:auto}
+.check .hint{font-weight:400; color:var(--muted)}
+
+#app{height:100%; display:flex; flex-direction:column}
+header.bar{display:flex; align-items:center; gap:1em; padding:.7em 1.1em; background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap}
+header.bar .title{display:flex; align-items:baseline; gap:.6em}
+header.bar .title small{color:var(--muted)}
+header.bar .spacer{flex:1}
+.pill{display:inline-flex; align-items:center; gap:.4em; padding:.25em .7em; border-radius:999px; background:var(--moss-soft); font-size:.85rem; font-weight:600}
+.pill.warn{background:var(--sun-soft)} .pill.bad{background:var(--alert-soft)}
+main{flex:1; display:grid; grid-template-columns:minmax(0,1fr) 380px; min-height:0}
+@media (max-width:900px){ #app{height:auto; min-height:100%} main{display:block} .content{overflow:visible} }
+.content{overflow:auto; padding:1.2em; min-height:0}
+aside.panel{background:var(--panel); border-left:1px solid var(--line); overflow:auto; padding:1em; min-height:0}
+@media (max-width:900px){ aside.panel{border-left:0; border-top:1px solid var(--line); max-height:none; overflow:visible} .tabs{position:static; margin-top:-1.2em} }
+.tabs{display:flex; border-bottom:1px solid var(--line); overflow-x:auto; margin:-1.2em -1.2em 1em; padding:0 .6em; background:var(--panel); position:sticky; top:-1.2em; z-index:3}
+.tabs button{border:0; border-radius:0; background:transparent; padding:.7em .8em; color:var(--muted); font-weight:600; border-bottom:3px solid transparent; white-space:nowrap}
+.tabs button.active{color:var(--ink); border-bottom-color:var(--moss)}
+.tabs button .n{display:inline-block; min-width:1.4em; padding:0 .35em; margin-left:.35em; border-radius:999px; background:var(--alert); color:#fff; font-size:.75rem; text-align:center}
+
+.card{background:var(--panel-2); border-radius:var(--r); padding:.85em 1em}
+.card.accent{background:var(--moss); color:var(--moss-ink)}
+.card.accent .muted{color:rgba(255,255,255,.75)}
+.chip{display:inline-block; padding:.1em .55em; border-radius:999px; font-size:.78rem; font-weight:600; background:var(--panel-2); border:1px solid var(--line); white-space:nowrap}
+.chip.good{background:var(--good-soft); border-color:transparent} .chip.ok{background:var(--sun-soft); border-color:transparent} .chip.bad{background:var(--alert-soft); border-color:transparent} .chip.info{background:var(--water-soft); border-color:transparent}
+.gauge{height:10px; background:var(--line); border-radius:99px; overflow:hidden; position:relative}
+.gauge i{display:block; height:100%; background:var(--good)}
+.gauge i.warn{background:var(--sun)} .gauge i.bad{background:var(--alert)}
+
+/* stock table */
+.cat-h{display:flex; align-items:baseline; gap:.6em; margin:1.2em 0 .4em}
+.cat-h h3{flex:1}
+.item{display:grid; grid-template-columns:2em minmax(0,1.6fr) minmax(0,1fr) 150px auto; gap:.6em; align-items:center; padding:.5em .4em; border-bottom:1px solid var(--line)}
+.item:hover{background:var(--panel-2)}
+.item.off{opacity:.5}
+.item .em{font-size:1.4rem; text-align:center}
+.item .nm{font-weight:700}
+.item .nm small{display:block; font-weight:400; color:var(--muted); font-size:.8rem}
+.item .tgt{font-size:.9rem}
+.item .tgt small{display:block; color:var(--muted); font-size:.78rem}
+.item .qty{display:flex; align-items:center; gap:.25em}
+.item .qty input{width:64px; text-align:right; padding:.3em .4em}
+.item .qty span{font-size:.8rem; color:var(--muted)}
+.item .st{display:flex; flex-direction:column; gap:.25em; align-items:flex-end; min-width:90px}
+.item .bar{width:90px; height:6px; background:var(--line); border-radius:99px; overflow:hidden}
+.item .bar i{display:block; height:100%; background:var(--good)} .item .bar i.warn{background:var(--sun)} .item .bar i.bad{background:var(--alert)}
+@media (max-width:640px){ .item{grid-template-columns:2em minmax(0,1fr) auto; grid-template-rows:auto auto} .item .tgt{grid-column:2; font-size:.8rem} .item .st{grid-column:3; grid-row:1/3} .item .qty{grid-column:2/4} }
+
+.recipe{display:flex; gap:.8em; padding:.7em .5em; border-bottom:1px solid var(--line); cursor:pointer; align-items:flex-start}
+.recipe:hover{background:var(--panel-2)}
+.recipe .em{font-size:1.6rem; width:1.6em; text-align:center; flex:none}
+.recipe .nm{font-weight:700}
+.recipe .meta{color:var(--muted); font-size:.85rem}
+.shop li{display:flex; gap:.6em; align-items:center; padding:.4em .3em; border-bottom:1px solid var(--line)}
+.shop li b{flex:1}
+.shop li input{width:auto}
+.alerts{list-style:none; margin:0; padding:0}
+.alerts li{display:flex; gap:.6em; align-items:flex-start; padding:.5em .6em; border-radius:8px; cursor:pointer}
+.alerts li:hover{background:var(--panel-2)}
+.dot{width:.65em; height:.65em; border-radius:50%; flex:none; margin-top:.45em}
+.dot.out{background:var(--alert)} .dot.low{background:var(--sun)} .dot.exp{background:var(--water)} .dot.space{background:var(--moss)}
+.toast{position:fixed; left:50%; bottom:calc(1.2em + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:.6em 1em; border-radius:999px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .2s; z-index:50; font-weight:600}
+.toast.show{opacity:1}
+.wizard{max-width:860px; margin:0 auto; padding:2em 1.2em 4em}
+.wizard .hero{display:grid; grid-template-columns:1.1fr 1fr; gap:2em; align-items:center; margin-bottom:2em}
+@media (max-width:760px){ .wizard .hero{grid-template-columns:1fr} }
+.wizard .hero h1{font-size:clamp(2rem,5vw,3.2rem); line-height:1.05; font-weight:700}
+.wizard .hero p{font-size:1.05rem; color:var(--muted)}
+.steps{display:flex; gap:.4em; margin-bottom:1.2em; flex-wrap:wrap}
+.steps span{padding:.25em .7em; border-radius:999px; font-size:.85rem; font-weight:600; background:var(--panel-2); color:var(--muted)}
+.steps span.on{background:var(--moss); color:var(--moss-ink)} .steps span.done{background:var(--moss-soft); color:var(--ink)}
+.shelfviz{display:flex; gap:6px; align-items:flex-end; height:70px; margin:.6em 0}
+.shelfviz i{display:block; flex:1; background:var(--moss-soft); border:1px solid var(--moss); border-radius:4px 4px 0 0; position:relative; overflow:hidden}
+.shelfviz i b{position:absolute; left:0; right:0; bottom:0; background:var(--moss); opacity:.8}
+.help{font-size:.9rem; color:var(--muted)}
+dialog{border:0; border-radius:14px; padding:0; background:var(--panel); color:var(--ink); box-shadow:var(--shadow); width:min(600px,92vw); max-height:88vh}
+dialog::backdrop{background:rgba(30,24,16,.45)}
+dialog .dbody{padding:1.2em; overflow:auto; max-height:88vh}
+.kv{display:grid; grid-template-columns:auto 1fr; gap:.2em .8em; font-size:.9rem}
+.kv b{color:var(--muted); font-weight:600}
+.ing{display:grid; grid-template-columns:1fr auto auto; gap:.3em .8em; font-size:.9rem; align-items:center}
+.ing .no{color:var(--alert)}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"><div class="dbody" id="dlgBody"></div></dialog>
+<script>
+/* ============================================================
+   STAPLES — raw ingredients a home pantry runs on.
+   per  = amount one adult uses in a typical week (kids count 0.6)
+   pkg  = size of one package in that unit; pkgName describes it
+   vol  = cubic inches of storage per unit, packaging included
+   life = months of shelf life unopened, stored properly
+   store= dry | fridge | freezer
+   tier = 1 essential · 2 standard · 3 nice to have
+   tags = meat (skipped if vegetarian) · gluten (skipped if gluten-free)
+          bake (only if you bake) · water (only if emergency water is on)
+   price= rough US cost of one package — an estimate; edit per item
+   ============================================================ */
+const S=(id,n,e,cat,unit,per,pkg,pkgName,vol,life,store,tier,tags,price,note)=>({id,n,e,cat,unit,per,pkg,pkgName,vol,life,store,tier,tags:tags||[],price,note:note||''});
+const STAPLES=[
+/* Grains */
+S('rice','Rice, white long-grain','🍚','Grains','lb',0.75,5,'5 lb bag',40,36,'dry',1,[],5,'Keeps for years in a sealed container. Brown rice goes rancid in 6 months — buy it small.'),
+S('pasta','Pasta (dry)','🍝','Grains','lb',0.5,1,'1 lb box',60,24,'dry',1,['gluten'],1.5,'Mix long and short shapes.'),
+S('oats','Rolled oats','🥣','Grains','lb',0.5,2.6,'42 oz canister',55,18,'dry',1,[],4,'Breakfast, granola, baking, and a binder for meatballs.'),
+S('flour','Flour, all-purpose','🌾','Grains','lb',0.75,5,'5 lb bag',50,12,'dry',1,['gluten'],4,'Freeze the bag 48 hours when you bring it home to kill pantry-moth eggs.'),
+S('bread-flour','Bread flour','🍞','Grains','lb',0.5,5,'5 lb bag',50,12,'dry',2,['gluten','bake'],5,'Higher protein for chewier loaves and pizza.'),
+S('cornmeal','Cornmeal','🌽','Grains','lb',0.25,2,'2 lb bag',45,12,'dry',2,[],3,'Cornbread, polenta, dredging fish.'),
+S('masa','Masa harina','🫓','Grains','lb',0.25,4.4,'4.4 lb bag',45,12,'dry',3,[],5,'Fresh corn tortillas and tamales.'),
+S('quinoa','Quinoa','🍚','Grains','lb',0.25,1.5,'1.5 lb bag',45,24,'dry',3,[],8,'Rinse before cooking.'),
+S('crackers','Crackers','🍘','Grains','box',0.5,1,'box',120,6,'dry',2,['gluten'],3.5,'Rotate — they go stale before they expire.'),
+/* Legumes */
+S('dry-beans','Dried beans (black, pinto, kidney)','🫘','Legumes','lb',0.5,4,'4 lb bag',40,24,'dry',1,[],6,'A pound of dried beans equals about three cans. Older beans take longer to soften.'),
+S('lentils','Lentils','🫘','Legumes','lb',0.25,1,'1 lb bag',40,24,'dry',1,[],2,'No soaking; cooks in 25 minutes.'),
+S('chickpeas','Chickpeas, dried','🫘','Legumes','lb',0.15,1,'1 lb bag',40,24,'dry',2,[],2,'Hummus, curries, roasted snacks.'),
+S('split-peas','Split peas','🫘','Legumes','lb',0.15,1,'1 lb bag',40,24,'dry',3,[],2,'Soup.'),
+S('canned-beans','Canned beans (black, pinto, chickpea)','🥫','Canned & jarred','can',1,1,'15 oz can',32,36,'dry',1,[],1.2,'Fast protein for nights you did not soak anything.'),
+/* Canned & jarred */
+S('canned-tomatoes','Canned tomatoes (diced / crushed)','🥫','Canned & jarred','can',1.5,1,'15 oz can',32,24,'dry',1,[],1.5,'The base of half the recipes here.'),
+S('tomato-paste','Tomato paste','🥫','Canned & jarred','can',0.5,1,'6 oz can',10,24,'dry',1,[],1,'Freeze leftover paste in tablespoon blobs.'),
+S('pasta-sauce','Pasta sauce (jarred)','🫙','Canned & jarred','jar',0.5,1,'24 oz jar',60,18,'dry',2,[],3,''),
+S('tuna','Canned tuna / chicken','🥫','Canned & jarred','can',1,1,'5 oz can',12,36,'dry',1,[],1.5,'Pouches take less space but cost more.'),
+S('canned-veg','Canned vegetables (corn, green beans, peas)','🥫','Canned & jarred','can',2,1,'15 oz can',32,36,'dry',2,[],1.2,''),
+S('canned-fruit','Canned fruit','🥫','Canned & jarred','can',1,1,'15 oz can',32,24,'dry',3,[],1.8,'Buy packed in juice.'),
+S('coconut-milk','Coconut milk','🥥','Canned & jarred','can',0.5,1,'13.5 oz can',28,24,'dry',2,[],2,'Curries, soups, rice.'),
+S('bouillon','Bouillon cubes / base','🧂','Canned & jarred','cube',4,25,'jar of 25',1.2,24,'dry',1,[],4,'Better Than Bouillon lives in the fridge once opened; cubes do not care.'),
+S('broth','Broth (carton)','🥛','Canned & jarred','qt',0.5,1,'32 oz carton',70,12,'dry',3,[],2.5,'Bouillon does the same job in a tenth of the space.'),
+S('peanut-butter','Peanut butter','🥜','Canned & jarred','oz',6,16,'16 oz jar',2.5,12,'dry',1,[],3.5,''),
+S('honey','Honey','🍯','Baking & sweeteners','oz',3,16,'16 oz bottle',2,120,'dry',2,[],6,'Never spoils; warm it if it crystallizes.'),
+S('salsa','Salsa','🫙','Canned & jarred','jar',0.3,1,'16 oz jar',45,18,'dry',3,[],3,''),
+S('jam','Jam / jelly','🫙','Canned & jarred','oz',3,18,'18 oz jar',2.5,24,'dry',2,[],3.5,'PB&J, toast, glazes.'),
+S('cream-soup','Cream of mushroom / chicken soup','🥫','Canned & jarred','can',0.5,1,'10.5 oz can',24,24,'dry',3,[],1.5,'The casserole shortcut.'),
+S('cereal','Breakfast cereal','🥣','Grains','box',0.5,1,'box',260,8,'dry',2,[],4,'Bulky for what it is; oats do the same job in a fifth of the space.'),
+S('popcorn','Popcorn kernels','🍿','Grains','lb',0.25,2,'2 lb bag',45,24,'dry',3,[],3,'Cheapest snack in the house.'),
+S('mayo','Mayonnaise','🫙','Oils & condiments','oz',4,30,'30 oz jar',2.2,3,'fridge',2,[],5,'Keeps a year unopened on the shelf, 3 months in the fridge once open.'),
+/* Oils & condiments */
+S('oil','Cooking oil (canola / vegetable)','🫗','Oils & condiments','fl oz',8,48,'48 fl oz bottle',2.5,12,'dry',1,[],5,'Store dark and cool; rancid oil smells like crayons.'),
+S('olive-oil','Olive oil','🫒','Oils & condiments','fl oz',4,25,'750 ml bottle',2.5,18,'dry',2,[],10,''),
+S('vinegar','Vinegar (white / apple cider)','🫗','Oils & condiments','fl oz',3,32,'32 fl oz bottle',2.2,60,'dry',2,[],3,'Also a cleaner.'),
+S('soy-sauce','Soy sauce','🫗','Oils & condiments','fl oz',2,15,'15 fl oz bottle',2.5,36,'dry',2,[],3,''),
+S('hot-sauce','Hot sauce','🌶️','Oils & condiments','fl oz',1,12,'12 fl oz bottle',2.5,36,'dry',3,[],3,''),
+S('ketchup','Ketchup / mustard','🫙','Oils & condiments','fl oz',2,20,'20 oz bottle',2.5,12,'dry',3,[],3,''),
+/* Baking & sweeteners */
+S('sugar','Sugar, granulated','🍬','Baking & sweeteners','lb',0.5,4,'4 lb bag',45,120,'dry',1,[],4,'Keeps forever if dry.'),
+S('brown-sugar','Brown sugar','🍬','Baking & sweeteners','lb',0.15,2,'2 lb bag',45,24,'dry',2,['bake'],3,'Store with a bread slice to keep it soft.'),
+S('salt','Salt','🧂','Baking & sweeteners','oz',1.5,26,'26 oz canister',1.6,999,'dry',1,[],1.5,''),
+S('baking-powder','Baking powder','🧁','Baking & sweeteners','oz',0.5,8,'8 oz can',3,12,'dry',2,[],3,'Test old powder in hot water — it should fizz hard.'),
+S('baking-soda','Baking soda','🧁','Baking & sweeteners','oz',0.5,16,'16 oz box',2,36,'dry',2,[],1.5,''),
+S('yeast','Yeast (instant)','🍞','Baking & sweeteners','oz',0.25,4,'4 oz jar',4,12,'dry',2,['bake'],6,'Refrigerate or freeze after opening; it keeps a year or more frozen.'),
+S('vanilla','Vanilla extract','🧁','Baking & sweeteners','fl oz',0.1,4,'4 fl oz bottle',5,60,'dry',3,['bake'],8,''),
+S('cocoa','Cocoa powder','🍫','Baking & sweeteners','oz',0.5,8,'8 oz tin',3,24,'dry',3,['bake'],5,''),
+S('choc-chips','Chocolate chips','🍫','Baking & sweeteners','oz',1,12,'12 oz bag',3,12,'dry',3,['bake'],4,''),
+/* Spices */
+S('pepper','Black pepper','🧂','Spices','oz',0.2,3,'3 oz jar',6,36,'dry',1,[],5,''),
+S('cumin','Cumin','🧂','Spices','oz',0.15,2,'2 oz jar',6,24,'dry',2,[],3.5,''),
+S('chili-powder','Chili powder','🧂','Spices','oz',0.2,2.5,'2.5 oz jar',6,24,'dry',2,[],3.5,''),
+S('garlic-powder','Garlic powder','🧂','Spices','oz',0.15,3,'3 oz jar',6,24,'dry',2,[],3.5,''),
+S('oregano','Oregano / Italian seasoning','🧂','Spices','oz',0.1,1,'1 oz jar',6,24,'dry',2,[],3,''),
+S('paprika','Paprika','🧂','Spices','oz',0.1,2,'2 oz jar',6,24,'dry',2,[],3.5,''),
+S('cinnamon','Cinnamon','🧂','Spices','oz',0.1,2,'2 oz jar',6,36,'dry',2,[],3.5,''),
+S('curry-powder','Curry powder','🧂','Spices','oz',0.15,2,'2 oz jar',6,24,'dry',2,[],4,''),
+S('pepper-flakes','Red pepper flakes','🧂','Spices','oz',0.05,1.5,'1.5 oz jar',6,36,'dry',3,[],3,''),
+S('bay','Bay leaves','🧂','Spices','oz',0.02,0.2,'0.2 oz jar',6,36,'dry',3,[],3,''),
+/* Long-keeping produce */
+S('potatoes','Potatoes','🥔','Produce (long-keeping)','lb',2,5,'5 lb bag',40,1.5,'dry',1,[],4,'Cool, dark, away from onions. Green skin = toss.'),
+S('onions','Onions','🧅','Produce (long-keeping)','lb',1.5,3,'3 lb bag',40,1.5,'dry',1,[],3,''),
+S('garlic','Garlic','🧄','Produce (long-keeping)','head',1,3,'3 heads',6,3,'dry',1,[],2,''),
+S('sweet-potatoes','Sweet potatoes','🍠','Produce (long-keeping)','lb',1,3,'3 lb bag',40,1,'dry',2,[],3,'Do not refrigerate raw.'),
+S('carrots','Carrots','🥕','Produce (long-keeping)','lb',1,2,'2 lb bag',40,1,'fridge',2,[],2,''),
+S('cabbage','Cabbage','🥬','Produce (long-keeping)','head',0.5,1,'head',120,1,'fridge',3,[],2,'Keeps a month; slaw, soup, stir-fry.'),
+S('apples','Apples','🍎','Produce (long-keeping)','lb',1.5,3,'3 lb bag',40,1,'fridge',2,[],4,''),
+S('citrus','Lemons / limes / oranges','🍋','Produce (long-keeping)','lb',1,4,'4 lb bag',40,1,'fridge',3,[],4,''),
+/* Drinks & water */
+S('coffee','Coffee','☕','Drinks & water','oz',4,12,'12 oz bag',3,6,'dry',2,[],9,'Freeze whole beans you will not use within a month.'),
+S('tea','Tea bags','🍵','Drinks & water','bag',7,100,'box of 100',0.3,24,'dry',3,[],5,''),
+S('water','Drinking water (emergency)','💧','Drinks & water','gal',7,1,'1 gal jug',260,12,'dry',1,['water'],1.2,'One gallon per person per day is the emergency guideline. Bulky — count it against shelf space honestly.'),
+/* Fridge */
+S('eggs','Eggs','🥚','Dairy & eggs','each',7,12,'dozen',8,1.5,'fridge',1,[],3.5,'Fine for 3–5 weeks past the date if kept cold.'),
+S('butter','Butter','🧈','Dairy & eggs','lb',0.25,1,'1 lb (4 sticks)',30,3,'fridge',1,[],5,'Freezes for a year — keep the extra in the freezer.'),
+S('cheese','Cheese (block)','🧀','Dairy & eggs','lb',0.5,2,'2 lb block',40,2,'fridge',2,[],8,'Blocks keep far longer than shreds.'),
+S('milk','Milk','🥛','Dairy & eggs','gal',0.5,1,'1 gal',260,0.5,'fridge',1,[],4,''),
+S('powdered-milk','Powdered milk','🥛','Dairy & eggs','oz',4,25.6,'25.6 oz box',3,18,'dry',2,[],8,'Backup milk for baking and oatmeal when the gallon runs out.'),
+S('yogurt','Yogurt (plain)','🥛','Dairy & eggs','qt',0.5,1,'32 oz tub',70,1,'fridge',3,[],4,''),
+S('tortillas','Flour tortillas','🫓','Grains','each',5,10,'pack of 10',6,1,'fridge',2,['gluten'],3,'Freeze extra packs.'),
+/* Freezer */
+S('chicken','Chicken (thighs / breasts)','🍗','Meat & fish','lb',1.5,3,'3 lb pack',40,9,'freezer',1,['meat'],10,'Repack into meal-size portions before freezing.'),
+S('ground-beef','Ground beef','🥩','Meat & fish','lb',1,1,'1 lb pack',35,4,'freezer',1,['meat'],6,''),
+S('fish','Fish fillets','🐟','Meat & fish','lb',0.5,1,'1 lb bag',35,6,'freezer',2,['meat'],9,''),
+S('sausage','Sausage / bacon','🥓','Meat & fish','lb',0.5,1,'1 lb pack',25,3,'freezer',3,['meat'],6,''),
+S('frozen-veg','Frozen vegetables (mixed, peas, broccoli)','🥦','Freezer','lb',1.5,1,'16 oz bag',45,8,'freezer',1,[],2,'As nutritious as fresh and never wilts.'),
+S('frozen-fruit','Frozen fruit','🫐','Freezer','lb',0.5,1,'16 oz bag',45,8,'freezer',2,[],3,''),
+S('bread','Bread (loaf)','🍞','Grains','loaf',0.5,1,'loaf',200,3,'freezer',2,['gluten'],3,'Freeze sliced; toast straight from frozen. Take it out of the plan if you bake your own.'),
+];
+['bread','tortillas','crackers','pasta-sauce'].forEach(id=>{STAPLES.find(s=>s.id===id).made=true;});
+
+/* ============================================================
+   RECIPES — built only from staples above. Quantities serve 4 and
+   are in each staple's unit. A third value of true means optional.
+   ============================================================ */
+const R=(id,n,e,time,ings,steps,tags,yields)=>({id,n,e,time,ings,steps,tags:tags||[],yields:yields||null});
+const RECIPES=[
+R('rice-beans','Rice and beans','🍚',35,[['rice',.75],['canned-beans',2],['onions',.3],['garlic',.3],['oil',2],['cumin',.1],['salt',.1],['hot-sauce',.5,true]],
+ 'Sauté chopped onion and garlic in oil until soft. Add cumin, then beans with their liquid and a splash of water; simmer 10 minutes and mash a few. Serve over rice cooked with a pinch of salt.',['veg','gf','cheap']),
+R('lentil-soup','Lentil soup','🍲',40,[['lentils',.75],['onions',.5],['carrots',.3,true],['garlic',.2],['canned-tomatoes',1],['bouillon',4],['cumin',.1],['oil',1],['bay',.02,true]],
+ 'Soften onion (and carrot) in oil. Add garlic, cumin, lentils, tomatoes, 6 cups water and bouillon. Simmer 25–30 minutes until lentils are soft. Salt to taste; a squeeze of citrus if you have it.',['veg','gf','cheap']),
+R('chili','Chili','🌶️',45,[['ground-beef',1,true],['canned-beans',2],['canned-tomatoes',2],['tomato-paste',1],['onions',.5],['garlic',.2],['chili-powder',.3],['cumin',.1],['salt',.1]],
+ 'Brown the beef (or skip it) with onion. Stir in garlic, chili powder and cumin, then tomato paste, tomatoes and beans. Simmer 30 minutes. Serve with rice or cornbread.',['gf']),
+R('marinara','Pasta marinara','🍝',25,[['pasta',1],['canned-tomatoes',2],['garlic',.3],['olive-oil',2],['oregano',.1],['salt',.1],['pepper-flakes',.03,true]],
+ 'Sizzle sliced garlic in olive oil, add tomatoes, oregano and salt, and simmer 15 minutes while the pasta boils. Toss with a splash of pasta water.',['veg','cheap']),
+R('tuna-pasta','Tuna pasta','🐟',20,[['pasta',1],['tuna',2],['olive-oil',2],['garlic',.2],['canned-veg',1,true],['pepper-flakes',.03,true],['salt',.1]],
+ 'Boil pasta. Warm garlic in olive oil, add drained tuna and peas, toss with pasta and a ladle of cooking water. Pepper flakes and black pepper.',['cheap']),
+R('pancakes','Pancakes','🥞',20,[['flour',.5],['sugar',.05],['baking-powder',.5],['salt',.05],['eggs',2],['milk',.25],['butter',.1],['oil',1]],
+ 'Whisk dry ingredients. Whisk eggs, milk and melted butter, combine gently (lumps are fine). Cook on an oiled skillet until bubbles pop, then flip. Powdered milk works in place of milk.',['veg']),
+R('oatmeal','Oatmeal','🥣',10,[['oats',.5],['salt',.02],['honey',1],['cinnamon',.05],['milk',.1,true]],
+ 'Simmer oats in 4 cups water (or half milk) with salt 5 minutes. Honey and cinnamon on top.',['veg','gf','cheap']),
+R('bread','Sandwich bread','🍞',180,[['flour',1],['yeast',.25],['salt',.2],['sugar',.05],['oil',1]],
+ 'Mix flour, yeast, salt, sugar, oil and 1½ cups warm water; knead 8 minutes. Rise 1 hour, shape into a loaf pan, rise 45 minutes, bake at 375°F for 35 minutes. Bread flour makes it chewier.',['veg','bake'],{id:'bread',qty:1}),
+R('tortillas','Flour tortillas','🫓',40,[['flour',.75],['salt',.1],['baking-powder',.1],['oil',2]],
+ 'Mix flour, salt, baking powder, oil and ¾ cup warm water into a soft dough. Rest 20 minutes, divide into 12, roll thin, cook 30 seconds a side in a dry hot skillet.',['veg','cheap'],{id:'tortillas',qty:12}),
+R('crackers','Crackers (for the shelf)','🍘',30,[['flour',.5],['oil',1.5],['salt',.1],['oregano',.05,true]],
+ 'Mix flour, salt, oil and ½ cup water into a stiff dough. Roll paper-thin on a floured sheet pan, score into squares, prick with a fork, sprinkle salt, bake at 400°F for 12–15 minutes until golden. Cool fully; keeps 2 weeks sealed.',['veg'],{id:'crackers',qty:1}),
+R('tomato-sauce','Basic tomato sauce (for the shelf)','🫙',30,[['canned-tomatoes',2],['garlic',.3],['olive-oil',2],['oregano',.1],['salt',.1],['onions',.3,true]],
+ 'Cook garlic (and onion) in olive oil, add tomatoes, oregano and salt, simmer 20 minutes and blend if you like it smooth. Makes one jar\'s worth; keeps a week in the fridge or freeze it.',['veg','gf'],{id:'pasta-sauce',qty:1}),
+/* ---------- Everyday American table ---------- */
+R('mac-cheese','Mac and cheese','🧀',30,[['pasta',1],['butter',.25],['flour',.1],['milk',.2],['cheese',.75],['salt',.1],['pepper',.02]],
+ 'Boil pasta. Melt butter, whisk in flour for a minute, whisk in milk and simmer until thick. Stir in grated cheese off the heat, season, fold in pasta. Bake 15 minutes at 375°F if you like a crust.',['veg']),
+R('spaghetti-meat','Spaghetti with meat sauce','🍝',35,[['pasta',1],['ground-beef',1],['pasta-sauce',1],['onions',.3],['garlic',.2],['oregano',.05],['cheese',.25,true]],
+ 'Brown beef with onion and garlic, drain, add the jar of sauce and oregano, simmer 15 minutes while the pasta cooks.',[]),
+R('tacos','Ground beef tacos','🌮',25,[['tortillas',8],['ground-beef',1],['onions',.3],['chili-powder',.2],['cumin',.1],['garlic-powder',.05],['cheese',.25],['salsa',.3,true],['cabbage',.2,true]],
+ 'Brown beef with onion, season with chili powder, cumin and garlic powder, add a splash of water and simmer 5 minutes. Warm tortillas; top with cheese, salsa and shredded cabbage.',[]),
+R('sloppy-joes','Sloppy joes','🍔',25,[['ground-beef',1],['onions',.5],['ketchup',4],['tomato-paste',1],['vinegar',.5],['honey',.5],['bread',.5]],
+ 'Brown beef and onion, stir in ketchup, tomato paste, vinegar, honey and ½ cup water. Simmer 10 minutes until thick. Spoon onto toasted bread or buns.',[]),
+R('burgers','Burgers','🍔',20,[['ground-beef',1.5],['salt',.1],['pepper',.02],['bread',.5],['cheese',.25,true],['onions',.2,true],['ketchup',2,true]],
+ 'Form 4 patties, dimple the centers, season hard. Sear 3–4 minutes a side in a hot skillet. Toast the bread in the fat.',[]),
+R('chicken-noodle','Chicken noodle soup','🍜',40,[['chicken',1],['pasta',.5],['onions',.5],['carrots',.5],['garlic',.2],['bouillon',6],['bay',.02,true]],
+ 'Simmer chicken, onion, carrot, garlic and bay in 8 cups water with bouillon for 25 minutes. Pull out and shred the chicken, add pasta, cook 8 minutes, return the chicken.',[]),
+R('chicken-stew','Chicken and potato stew','🍲',50,[['chicken',1.5],['potatoes',1.5],['carrots',.5],['onions',.5],['flour',.1],['bouillon',4],['oil',1],['bay',.02,true]],
+ 'Brown chicken pieces in oil, add onion, then flour; stir a minute. Add 4 cups water with bouillon, potatoes, carrots and bay. Simmer 30 minutes until the potatoes are soft and the broth has thickened.',[]),
+R('meatloaf','Meatloaf','🍖',75,[['ground-beef',2],['eggs',1],['oats',.15],['onions',.3],['ketchup',3],['salt',.1],['garlic-powder',.05],['pepper',.02]],
+ 'Mix beef, egg, oats, grated onion, 1 tablespoon of the ketchup and seasoning. Shape into a loaf, spread the rest of the ketchup on top, bake at 350°F for 55–60 minutes. Rest 10 minutes.',[]),
+R('sheet-pan-chicken','Sheet-pan chicken and potatoes','🍗',50,[['chicken',2],['potatoes',2],['oil',2],['paprika',.1],['garlic-powder',.1],['salt',.1],['carrots',.5,true]],
+ 'Toss potato and carrot chunks with half the oil and seasoning, spread on a sheet pan, add oiled seasoned chicken on top. Roast at 425°F for 40 minutes.',['gf']),
+R('oven-fried-chicken','Oven-fried chicken','🍗',60,[['chicken',2],['flour',.5],['eggs',2],['paprika',.2],['garlic-powder',.1],['salt',.15],['oil',3],['cornmeal',.25,true]],
+ 'Dip chicken in beaten egg, then in flour (and cornmeal) seasoned with paprika, garlic powder and salt. Set on an oiled rack over a sheet pan, drizzle with oil, bake at 400°F for 45 minutes.',[]),
+R('bbq-chicken','BBQ chicken','🍗',50,[['chicken',2],['ketchup',6],['honey',2],['vinegar',1],['soy-sauce',.5],['paprika',.1],['garlic-powder',.05],['rice',.75,true]],
+ 'Simmer ketchup, honey, vinegar, soy sauce and spices 5 minutes into a sauce. Bake chicken at 400°F for 30 minutes, brush with sauce, bake 15 more. Serve with rice.',['gf']),
+R('pulled-chicken','BBQ pulled chicken sandwiches','🥪',60,[['chicken',2],['ketchup',6],['honey',2],['vinegar',1],['onions',.3],['paprika',.1],['bread',.5]],
+ 'Simmer chicken with onion, ketchup, honey, vinegar, paprika and ½ cup water, covered, 40 minutes. Shred, stir back into the sauce, pile on toasted bread.',[]),
+R('stir-fry','Chicken and vegetable stir-fry','🥡',25,[['chicken',1],['frozen-veg',1.5],['soy-sauce',3],['garlic',.3],['oil',2],['rice',.75],['honey',1,true],['pepper-flakes',.02,true]],
+ 'Cook rice. Sear thin-sliced chicken in oil over high heat, add garlic and vegetables, then soy sauce and honey. Two minutes more and serve over rice.',[]),
+R('fajitas','Chicken fajitas','🌮',30,[['chicken',1.5],['onions',1],['tortillas',8],['oil',2],['chili-powder',.2],['cumin',.1],['citrus',.2,true],['cheese',.25,true]],
+ 'Season sliced chicken with chili powder and cumin. Sear in oil, add sliced onions and cook until charred at the edges. Squeeze of lime, into warm tortillas.',[]),
+R('white-chili','White chicken chili','🍲',40,[['chicken',1.5],['canned-beans',3],['onions',.5],['garlic',.3],['cumin',.2],['chili-powder',.1],['bouillon',4],['salsa',.5,true],['cheese',.25,true]],
+ 'Sauté onion and garlic, add spices, chicken, beans, 3 cups water with bouillon and salsa. Simmer 25 minutes, shred the chicken, mash some beans to thicken.',['gf']),
+R('tortilla-soup','Chicken tortilla soup','🍲',40,[['chicken',1],['canned-tomatoes',2],['canned-beans',1],['canned-veg',1],['onions',.5],['garlic',.3],['chili-powder',.2],['cumin',.1],['bouillon',4],['tortillas',4],['cheese',.25,true],['citrus',.2,true]],
+ 'Simmer chicken with onion, garlic, tomatoes, spices and 4 cups water with bouillon 20 minutes; shred. Add beans and corn. Top with crisped tortilla strips, cheese and lime.',[]),
+R('chicken-dumplings','Chicken and dumplings','🍲',50,[['chicken',1.5],['onions',.5],['carrots',.5],['bouillon',6],['flour',.5],['baking-powder',.3],['milk',.15],['butter',.1],['salt',.1]],
+ 'Simmer chicken, onion and carrot in 6 cups water with bouillon 25 minutes; shred. Stir flour, baking powder, salt, melted butter and milk into a soft dough, drop spoonfuls onto the simmering soup, cover, cook 15 minutes without peeking.',[]),
+R('pot-pie','Chicken pot pie with biscuit top','🥧',55,[['chicken',1],['frozen-veg',1.5],['onions',.3],['butter',.25],['flour',.5],['milk',.3],['bouillon',4],['baking-powder',.4],['salt',.1]],
+ 'Make a sauce: cook onion in half the butter, add a little flour, then 2 cups water with bouillon and half the milk. Stir in chicken and vegetables, pour into a dish. Top with biscuit dough (remaining flour, baking powder, salt, butter, milk). Bake at 400°F for 25 minutes.',[]),
+R('chicken-salad','Chicken salad','🥗',15,[['chicken',1],['mayo',4],['onions',.1],['salt',.05],['apples',.3,true],['bread',.5,true]],
+ 'Chop cooked chicken (leftover or poached), fold with mayo, minced onion, diced apple, salt and pepper. Sandwiches or over crackers.',['gf']),
+R('beef-rice-skillet','Cheesy beef and rice skillet','🍚',35,[['ground-beef',1],['rice',.75],['canned-tomatoes',1],['onions',.5],['cheese',.5],['bouillon',2],['chili-powder',.1]],
+ 'Brown beef and onion, add rice, tomatoes, 2 cups water with bouillon and chili powder. Cover and simmer 18 minutes. Top with cheese and let it melt.',['gf']),
+R('goulash','American goulash','🍝',35,[['ground-beef',1],['pasta',.75],['canned-tomatoes',2],['tomato-paste',1],['onions',.5],['garlic',.3],['paprika',.2],['soy-sauce',.5,true],['cheese',.25,true]],
+ 'Brown beef with onion and garlic, add tomatoes, paste, paprika, 2 cups water and the dry pasta. Simmer 15 minutes, stirring, until the pasta is tender. Cheese on top.',[]),
+R('shepherds-pie','Shepherd\'s pie','🥧',60,[['ground-beef',1.5],['onions',.5],['frozen-veg',1],['tomato-paste',1],['bouillon',2],['flour',.05],['potatoes',2],['butter',.25],['milk',.1]],
+ 'Brown beef and onion, stir in flour, paste, vegetables and 1 cup water with bouillon; simmer 10 minutes. Top with mashed potatoes (potatoes, butter, milk), bake at 400°F for 25 minutes.',['gf']),
+R('baked-ziti','Baked ziti','🍝',45,[['pasta',1],['pasta-sauce',1],['cheese',1],['eggs',1],['oregano',.05],['ground-beef',1,true]],
+ 'Cook pasta 2 minutes short. Mix with sauce, egg, most of the cheese (and browned beef). Top with the rest of the cheese, bake at 375°F for 25 minutes.',[]),
+R('garlic-butter-pasta','Garlic butter pasta','🍝',20,[['pasta',1],['butter',.35],['garlic',.3],['cheese',.5],['milk',.1],['pepper',.02],['frozen-veg',.5,true]],
+ 'Melt butter with sliced garlic, add drained pasta, cheese, milk and a ladle of pasta water. Toss until glossy. Peas make it dinner.',['veg']),
+R('tuna-casserole','Tuna noodle casserole','🐟',40,[['pasta',.75],['tuna',2],['cream-soup',1],['frozen-veg',.75],['cheese',.25],['milk',.1],['crackers',.2,true]],
+ 'Mix cooked pasta with tuna, soup, milk, peas and half the cheese. Top with cheese and crushed crackers, bake at 375°F for 25 minutes.',[]),
+R('tuna-patties','Tuna patties','🐟',20,[['tuna',3],['eggs',2],['crackers',.3],['onions',.2],['mayo',1],['oil',2]],
+ 'Mix tuna, eggs, crushed crackers, minced onion and mayo. Form patties, fry in oil 3 minutes a side. Oats or bread crumbs work instead of crackers.',[]),
+R('fish-chips','Oven fish and chips','🐟',40,[['fish',1.5],['potatoes',2],['oil',3],['flour',.2],['eggs',1],['cornmeal',.2],['salt',.1],['citrus',.2,true]],
+ 'Roast oiled potato wedges at 425°F for 20 minutes. Dredge fish in flour, egg, then cornmeal; add to the pan and bake 12 minutes more. Lemon and vinegar.',[]),
+R('jambalaya','Sausage jambalaya','🍚',45,[['sausage',1],['rice',.75],['canned-tomatoes',1],['onions',.5],['garlic',.3],['paprika',.2],['bouillon',3],['hot-sauce',.3,true],['chicken',1,true]],
+ 'Brown sliced sausage (and chicken), add onion and garlic, then rice, tomatoes, paprika and 2½ cups water with bouillon. Cover, simmer 20 minutes. Hot sauce.',['gf']),
+R('red-beans-rice','Red beans and rice','🍚',40,[['canned-beans',3],['sausage',1],['rice',.75],['onions',.5],['garlic',.3],['paprika',.1],['bay',.02,true],['hot-sauce',.3,true]],
+ 'Brown sausage, add onion and garlic, then beans with their liquid, bay and paprika. Simmer 20 minutes, mashing some beans. Over rice.',['gf']),
+R('cabbage-sausage','Cabbage, sausage and potatoes','🥬',35,[['cabbage',1],['sausage',1],['potatoes',1],['onions',.5],['oil',1],['vinegar',.5,true]],
+ 'Brown sausage, add onion and diced potato, cook 10 minutes, add chopped cabbage and ½ cup water. Cover and cook 15 minutes. Splash of vinegar.',['gf']),
+R('biscuits-gravy','Biscuits and sausage gravy','🥓',40,[['sausage',1],['flour',.9],['baking-powder',.6],['butter',.35],['milk',.45],['salt',.15],['pepper',.05]],
+ 'Bake biscuits (flour, baking powder, salt, butter, milk). Brown sausage, sprinkle with 3 tablespoons flour, stir, whisk in the rest of the milk and simmer until thick. Lots of pepper.',[]),
+R('corn-chowder','Corn chowder','🌽',35,[['canned-veg',2],['potatoes',1.5],['onions',.5],['butter',.25],['flour',.1],['milk',.3],['bouillon',2],['sausage',.5,true]],
+ 'Cook onion in butter, stir in flour, add 2 cups water with bouillon and diced potatoes. Simmer 15 minutes, add corn and milk, heat through. Bacon or sausage on top.',[]),
+R('veg-soup','Vegetable soup','🥕',35,[['canned-tomatoes',1],['frozen-veg',1.5],['potatoes',1],['onions',.5],['garlic',.2],['bouillon',6],['oregano',.05],['bay',.02,true]],
+ 'Sauté onion and garlic, add potatoes, tomatoes, 6 cups water with bouillon and herbs. Simmer 15 minutes, add frozen vegetables, 5 minutes more.',['veg','gf','cheap']),
+R('enchiladas','Bean and cheese enchiladas','🌯',45,[['tortillas',8],['canned-beans',2],['cheese',.75],['canned-tomatoes',1],['tomato-paste',1],['chili-powder',.3],['cumin',.1],['garlic-powder',.05],['onions',.3]],
+ 'Blend tomatoes, paste, spices and 1 cup water into a sauce; simmer 10 minutes. Fill tortillas with mashed beans, onion and half the cheese, roll into a dish, cover with sauce and cheese. Bake at 375°F for 20 minutes.',['veg']),
+R('quesadillas','Quesadillas','🫓',15,[['tortillas',8],['cheese',.75],['canned-beans',1,true],['salsa',.3,true]],
+ 'Cheese (and beans) between tortillas, toast in a dry skillet until crisp and melted. Salsa for dipping.',['veg']),
+R('loaded-potatoes','Loaded baked potatoes','🥔',60,[['potatoes',3],['cheese',.5],['butter',.2],['canned-beans',1,true],['salsa',.3,true],['yogurt',.2,true]],
+ 'Bake potatoes at 400°F for 55 minutes. Split, fluff with butter, pile on cheese, warm beans, salsa and a spoon of yogurt.',['veg','gf']),
+R('mashed-potatoes','Mashed potatoes','🥔',30,[['potatoes',2.5],['butter',.25],['milk',.1],['salt',.1]],
+ 'Boil peeled potatoes 20 minutes, drain well, mash with butter, warm milk and salt.',['veg','gf']),
+R('roast-potatoes','Roasted potatoes','🥔',40,[['potatoes',2],['oil',2],['salt',.1],['garlic-powder',.05],['paprika',.05]],
+ 'Cut into chunks, toss with oil and seasoning, roast at 425°F for 35 minutes, turning once.',['veg','gf']),
+R('hash-browns','Hash browns','🥔',20,[['potatoes',1.5],['oil',2],['salt',.1],['onions',.2,true]],
+ 'Grate potatoes, squeeze bone dry in a towel. Press into a hot oiled skillet, cook undisturbed 6 minutes, flip, 5 more.',['veg','gf']),
+R('roast-sweet-carrots','Roasted sweet potatoes and carrots','🍠',35,[['sweet-potatoes',1.5],['carrots',1],['oil',2],['salt',.1],['cinnamon',.02,true]],
+ 'Chunks, oil, salt, 425°F for 30 minutes.',['veg','gf']),
+R('mashed-sweet','Mashed sweet potatoes','🍠',30,[['sweet-potatoes',2],['butter',.2],['salt',.05],['cinnamon',.02,true],['milk',.05,true]],
+ 'Boil peeled chunks 15 minutes, mash with butter, salt and a pinch of cinnamon.',['veg','gf']),
+R('glazed-carrots','Honey-glazed carrots','🥕',20,[['carrots',1.5],['butter',.15],['honey',1],['salt',.05]],
+ 'Simmer sliced carrots in ½ cup water until nearly tender, add butter and honey, cook until the liquid turns to a glaze.',['veg','gf']),
+R('coleslaw','Coleslaw','🥬',15,[['cabbage',.5],['carrots',.3],['mayo',4],['vinegar',1],['sugar',.05],['salt',.05]],
+ 'Shred cabbage and carrot. Whisk mayo, vinegar, sugar and salt; toss. Better after an hour.',['veg','gf']),
+R('potato-salad','Potato salad','🥔',40,[['potatoes',2],['eggs',3],['mayo',5],['onions',.2],['vinegar',.5],['salt',.1],['paprika',.02,true]],
+ 'Boil potato chunks and eggs. Toss the warm potatoes with vinegar, then mayo, chopped egg, onion and salt. Chill.',['veg','gf']),
+R('pasta-salad','Pasta salad','🍝',25,[['pasta',1],['olive-oil',2],['vinegar',1],['frozen-veg',.5],['cheese',.25],['onions',.2],['oregano',.05],['salt',.1]],
+ 'Cook pasta, rinse cool. Toss with oil, vinegar, thawed peas, cubed cheese, onion and oregano.',['veg']),
+R('three-bean-salad','Three-bean salad','🫘',15,[['canned-beans',3],['onions',.2],['vinegar',2],['oil',2],['sugar',.05],['salt',.05]],
+ 'Drain and rinse beans, toss with minced onion and a dressing of vinegar, oil, sugar and salt. Keeps 4 days.',['veg','gf','cheap']),
+R('deviled-eggs','Deviled eggs','🥚',30,[['eggs',12],['mayo',3],['vinegar',.3],['paprika',.05],['salt',.05]],
+ 'Hard-boil 12 minutes, cool, halve. Mash yolks with mayo, vinegar and salt, pipe back in, dust with paprika.',['veg','gf']),
+R('egg-salad','Egg salad sandwiches','🥪',20,[['eggs',6],['mayo',3],['salt',.05],['bread',.5],['onions',.1,true]],
+ 'Chop hard-boiled eggs, fold with mayo, salt and pepper. On toast.',['veg']),
+R('tuna-salad','Tuna salad sandwiches','🥪',10,[['tuna',2],['mayo',3],['bread',.5],['onions',.1,true],['pepper',.02]],
+ 'Drain tuna, mix with mayo, minced onion and pepper. Sandwiches or on crackers.',[]),
+R('pbj','Peanut butter and jelly','🥪',5,[['bread',.5],['peanut-butter',6],['jam',4]],
+ 'You know how.',['veg','cheap']),
+R('scrambled-toast','Scrambled eggs and toast','🍳',10,[['eggs',8],['butter',.1],['bread',.5],['salt',.05]],
+ 'Low heat, butter, stir constantly, pull them a little wet. Toast.',['veg']),
+R('omelets','Cheese omelets','🍳',15,[['eggs',8],['cheese',.4],['butter',.15],['salt',.05],['frozen-veg',.3,true]],
+ 'Two eggs per omelet in a buttered nonstick pan, cheese in the middle, fold when barely set.',['veg','gf']),
+R('breakfast-burritos','Breakfast burritos','🌯',20,[['tortillas',6],['eggs',8],['cheese',.3],['potatoes',.5,true],['salsa',.3,true],['sausage',.5,true]],
+ 'Scramble eggs (with browned sausage and fried potato). Roll with cheese and salsa in warm tortillas. Freeze extras in foil.',[]),
+R('french-toast','French toast','🍞',15,[['bread',.5],['eggs',4],['milk',.1],['cinnamon',.05],['butter',.1],['sugar',.05],['vanilla',.1,true]],
+ 'Whisk eggs, milk, cinnamon, sugar and vanilla. Soak slices, cook in butter until golden both sides.',['veg']),
+R('waffles','Waffles','🧇',20,[['flour',.5],['baking-powder',.5],['sugar',.1],['salt',.05],['eggs',2],['milk',.25],['butter',.15]],
+ 'Whisk dry, whisk wet with melted butter, combine. Cook in a hot waffle iron; makes about 8.',['veg']),
+R('muffins','Basic muffins','🧁',30,[['flour',.5],['sugar',.25],['baking-powder',.5],['salt',.05],['eggs',1],['milk',.15],['oil',2],['frozen-fruit',.5,true],['vanilla',.1,true]],
+ 'Whisk dry; whisk egg, milk, oil and vanilla; combine, fold in fruit. Fill 12 cups, bake at 375°F for 20 minutes.',['veg']),
+R('cinnamon-toast','Cinnamon toast','🍞',10,[['bread',.5],['butter',.2],['sugar',.1],['cinnamon',.05]],
+ 'Butter the bread, sprinkle with cinnamon sugar, toast under the broiler until bubbling.',['veg']),
+R('yogurt-parfait','Yogurt parfaits','🫐',5,[['yogurt',1],['frozen-fruit',.5],['oats',.3],['honey',1]],
+ 'Layer yogurt, thawed fruit, oats (or granola) and honey.',['veg','gf']),
+R('smoothie','Fruit smoothies','🥤',5,[['frozen-fruit',1],['yogurt',.5],['milk',.15],['honey',1,true]],
+ 'Blend until smooth. Oats make it more filling.',['veg','gf']),
+R('hot-cocoa','Hot cocoa','☕',10,[['milk',.25],['cocoa',1],['sugar',.1],['vanilla',.05,true]],
+ 'Whisk cocoa and sugar with a splash of milk into a paste, add the rest of the milk and heat gently.',['veg','gf']),
+R('popcorn','Stovetop popcorn','🍿',10,[['popcorn',.25],['oil',1],['salt',.05],['butter',.1,true]],
+ 'Oil and three kernels in a covered pot; when they pop add the rest, shake until popping slows. Salt, butter.',['veg','gf','cheap']),
+R('choc-chip-cookies','Chocolate chip cookies','🍪',30,[['flour',.6],['butter',.5],['sugar',.25],['brown-sugar',.3],['eggs',2],['baking-soda',.1],['salt',.05],['choc-chips',12],['vanilla',.2,true]],
+ 'Beat butter with both sugars, add eggs and vanilla, then flour, soda and salt, then chips. Scoop, bake at 350°F for 11 minutes. Makes about 36.',['veg']),
+R('oatmeal-cookies','Oatmeal cookies','🍪',30,[['oats',.6],['flour',.4],['butter',.5],['sugar',.4],['eggs',2],['baking-soda',.1],['cinnamon',.1],['salt',.05],['vanilla',.1,true]],
+ 'Beat butter and sugar, add eggs, then everything else. Bake at 350°F for 12 minutes.',['veg']),
+R('pb-cookies','Three-ingredient peanut butter cookies','🍪',20,[['peanut-butter',16],['sugar',.5],['eggs',1]],
+ 'Mix, roll into balls, press with a fork, bake at 350°F for 10 minutes. Naturally gluten-free.',['veg','gf']),
+R('brownies','Brownies','🍫',40,[['butter',.5],['sugar',.5],['eggs',3],['cocoa',3],['flour',.3],['salt',.05],['vanilla',.1,true]],
+ 'Melt butter, stir in sugar and cocoa, then eggs one at a time, then flour and salt. Bake in an 8" pan at 350°F for 25 minutes.',['veg']),
+R('apple-crisp','Apple crisp','🍎',50,[['apples',3],['oats',.4],['flour',.3],['sugar',.3],['butter',.35],['cinnamon',.1]],
+ 'Sliced apples with half the sugar and cinnamon in a dish. Rub butter into oats, flour and the rest of the sugar; crumble on top. Bake at 375°F for 40 minutes.',['veg']),
+R('applesauce','Applesauce','🍎',30,[['apples',3],['cinnamon',.05],['sugar',.1,true],['citrus',.1,true]],
+ 'Simmer peeled apple chunks with ¼ cup water 20 minutes, mash. Cinnamon; sugar only if the apples need it.',['veg','gf']),
+R('rice-pudding','Rice pudding','🍚',45,[['rice',.5],['milk',.25],['sugar',.2],['cinnamon',.05],['vanilla',.1,true],['eggs',1,true]],
+ 'Simmer rice in milk with sugar, stirring often, 35 minutes until thick and creamy. Cinnamon and vanilla.',['veg','gf']),
+R('egg-drop-soup','Egg drop soup','🥚',15,[['eggs',3],['bouillon',4],['soy-sauce',1],['garlic',.1],['frozen-veg',.3,true]],
+ 'Bring 4 cups water with bouillon, garlic and soy sauce to a simmer. Drizzle in beaten eggs while stirring slowly. Peas or corn if you like.',['gf','cheap']),
+R('quick-noodle-soup','Quick noodle soup','🍜',15,[['pasta',.5],['bouillon',4],['eggs',2],['frozen-veg',.5],['soy-sauce',1],['garlic',.1],['hot-sauce',.3,true]],
+ 'Simmer noodles in 4 cups water with bouillon and garlic. Add vegetables, crack in eggs to poach, finish with soy sauce and hot sauce.',['cheap']),
+R('cornbread','Cornbread','🌽',35,[['cornmeal',.5],['flour',.5],['sugar',.1],['baking-powder',.5],['salt',.1],['eggs',2],['milk',.15],['butter',.25]],
+ 'Whisk dry ingredients; stir in eggs, milk and melted butter. Bake in a greased skillet or pan at 400°F for 20–25 minutes. Gluten-free: use all cornmeal.',['veg']),
+R('fried-rice','Egg fried rice','🍳',20,[['rice',.75],['eggs',3],['frozen-veg',.5],['soy-sauce',2],['oil',2],['garlic',.2],['onions',.3]],
+ 'Best with day-old rice. Scramble the eggs and set aside. Fry onion and garlic, add frozen vegetables, then rice; stir over high heat until it crackles. Soy sauce, eggs back in.',['veg']),
+R('black-bean-soup','Black bean soup','🍲',30,[['canned-beans',3],['onions',.5],['garlic',.3],['cumin',.15],['chili-powder',.1],['bouillon',2],['oil',1],['citrus',.2,true]],
+ 'Sauté onion and garlic, add spices, beans with liquid, 2 cups water and bouillon. Simmer 15 minutes; blend half. Lime and hot sauce at the table.',['veg','gf','cheap']),
+R('hummus','Hummus','🥣',90,[['chickpeas',.5],['olive-oil',2],['garlic',.2],['cumin',.05],['salt',.05],['citrus',.2,true]],
+ 'Soak chickpeas overnight (or use 2 cans of canned beans instead), boil until very soft. Blend with garlic, cumin, salt, olive oil, lemon and enough cooking water to make it smooth.',['veg','gf']),
+R('pb-bites','Peanut butter oat bites','🥜',15,[['oats',.5],['peanut-butter',8],['honey',3],['choc-chips',3,true],['cinnamon',.05,true]],
+ 'Stir everything together, roll into balls, chill 30 minutes. No-cook snack that keeps a week in the fridge.',['veg','gf']),
+R('potato-soup','Potato soup','🥔',40,[['potatoes',2],['onions',.5],['butter',.25],['flour',.1],['milk',.25],['bouillon',4],['salt',.1],['cheese',.25,true]],
+ 'Cook onion in butter, stir in flour, add 4 cups water with bouillon and diced potatoes. Simmer 20 minutes, mash roughly, add milk (or powdered milk) and cheese.',['veg']),
+R('minestrone','Minestrone','🍲',40,[['canned-tomatoes',2],['canned-beans',1],['pasta',.5],['frozen-veg',1],['onions',.5],['garlic',.3],['bouillon',4],['oregano',.1],['olive-oil',1]],
+ 'Sauté onion and garlic, add tomatoes, 5 cups water, bouillon and oregano. Simmer 10 minutes, add pasta and vegetables, cook until pasta is done. Beans in for the last 5 minutes.',['veg','cheap']),
+R('spanish-rice','Spanish rice','🍚',30,[['rice',.75],['tomato-paste',1],['onions',.3],['garlic',.2],['chili-powder',.1],['cumin',.1],['bouillon',2],['oil',1]],
+ 'Toast the rice in oil with onion until golden. Stir in garlic, spices and tomato paste, add 3 cups water with bouillon. Cover and simmer 18 minutes.',['veg','gf','cheap']),
+R('chicken-rice','Chicken and rice skillet','🍗',45,[['chicken',1.5],['rice',.75],['onions',.5],['garlic',.2],['bouillon',4],['frozen-veg',.75],['oil',1],['paprika',.1]],
+ 'Brown seasoned chicken in oil, set aside. Cook onion and garlic, add rice, 3 cups water with bouillon and paprika. Nestle chicken on top, cover, simmer 20 minutes; stir in vegetables for the last 5.',['gf']),
+R('burritos','Bean burritos','🌯',25,[['tortillas',8],['canned-beans',2],['rice',.5],['cheese',.5],['cumin',.05],['salsa',.5,true]],
+ 'Warm beans with cumin and mash a little. Fill tortillas with rice, beans and cheese; roll and crisp in a dry skillet. Freeze extras wrapped in foil.',['veg']),
+R('chickpea-curry','Chickpea curry','🍛',45,[['chickpeas',.5],['coconut-milk',1],['canned-tomatoes',1],['onions',.5],['garlic',.3],['curry-powder',.3],['oil',2],['rice',.75]],
+ 'Use soaked-and-boiled chickpeas or 2 cans of canned beans. Fry onion and garlic, bloom curry powder in the oil, add tomatoes and coconut milk. Simmer chickpeas 15 minutes. Serve over rice.',['veg','gf']),
+R('tomato-soup','Tomato soup and grilled cheese','🍅',30,[['canned-tomatoes',2],['butter',.25],['onions',.3],['bouillon',2],['milk',.1,true],['bread',1,true],['cheese',.5,true]],
+ 'Soften onion in half the butter, add tomatoes, 2 cups water and bouillon; simmer 15 minutes and blend. Finish with milk. Grilled cheese in the rest of the butter.',['veg']),
+R('frittata','Frittata','🍳',30,[['eggs',8],['cheese',.25],['potatoes',.5],['onions',.3],['oil',1],['frozen-veg',.5],['salt',.1]],
+ 'Fry diced potato and onion in an oven-safe skillet until tender, add vegetables. Pour over beaten eggs with cheese and salt; cook until the edges set, then bake at 375°F for 12 minutes.',['veg','gf']),
+R('granola','Granola','🥣',40,[['oats',1],['honey',4],['oil',3],['cinnamon',.1],['salt',.05],['peanut-butter',2,true]],
+ 'Mix oats with warmed honey, oil, cinnamon and salt. Spread on a sheet pan and bake at 300°F for 30 minutes, stirring once. Cool before storing.',['veg','gf']),
+R('dal','Dal with rice','🍛',40,[['lentils',.75],['onions',.5],['garlic',.3],['cumin',.15],['curry-powder',.2],['canned-tomatoes',1],['oil',2],['rice',.75]],
+ 'Simmer lentils in 4 cups water 20 minutes. Separately fry onion, garlic, cumin and curry powder in oil until fragrant, add tomatoes, then stir into the lentils. Salt. Serve over rice.',['veg','gf','cheap']),
+R('pasta-fagioli','Pasta e fagioli','🍝',35,[['pasta',.5],['canned-beans',2],['canned-tomatoes',1],['onions',.5],['garlic',.3],['bouillon',4],['olive-oil',1],['oregano',.1]],
+ 'Sauté onion and garlic in olive oil, add tomatoes, 4 cups water, bouillon and oregano. Add beans and pasta, simmer until pasta is tender. It should be thick — a stew more than a soup.',['veg','cheap']),
+R('shakshuka','Shakshuka','🍳',30,[['eggs',6],['canned-tomatoes',2],['onions',.5],['garlic',.3],['paprika',.15],['cumin',.1],['oil',2],['bread',1,true]],
+ 'Cook onion and garlic in oil, add spices and tomatoes, simmer 10 minutes into a thick sauce. Make wells, crack in eggs, cover and cook 6–8 minutes. Bread for dipping.',['veg','gf']),
+R('biscuits','Biscuits','🧈',25,[['flour',.75],['baking-powder',.6],['salt',.1],['butter',.35],['milk',.15]],
+ 'Cut cold butter into flour, baking powder and salt. Stir in milk just until it comes together, pat 1" thick, cut, bake at 450°F for 12 minutes.',['veg']),
+R('peanut-noodles','Peanut noodles','🥜',20,[['pasta',1],['peanut-butter',4],['soy-sauce',3],['garlic',.2],['vinegar',1],['honey',1],['frozen-veg',.5],['hot-sauce',.5,true]],
+ 'Whisk peanut butter, soy sauce, vinegar, honey, garlic and ½ cup hot pasta water into a sauce. Toss with drained noodles and steamed vegetables.',['veg']),
+R('hash','Beef and potato hash','🥩',35,[['ground-beef',1],['potatoes',1.5],['onions',.5],['oil',2],['paprika',.1],['salt',.1],['eggs',4,true]],
+ 'Fry diced potatoes in oil until crisp, push aside, brown beef and onion. Season. Top with fried eggs.',['gf']),
+R('baked-oatmeal','Baked oatmeal','🫐',45,[['oats',.75],['eggs',2],['milk',.2],['honey',3],['cinnamon',.1],['baking-powder',.2],['frozen-fruit',.5],['butter',.1]],
+ 'Mix oats, baking powder and cinnamon. Whisk eggs, milk, honey and melted butter; combine, fold in fruit. Bake in a greased dish at 375°F for 35 minutes.',['veg','gf']),
+R('pizza','Pizza','🍕',120,[['flour',1],['yeast',.25],['salt',.15],['olive-oil',1],['sugar',.05],['pasta-sauce',.5],['cheese',.5]],
+ 'Mix flour, yeast, salt, sugar, oil and 1¼ cups warm water; knead, rise 1 hour. Stretch, top with sauce and cheese, bake as hot as your oven goes, 10–12 minutes.',['veg','bake']),
+R('fish-tacos','Fish tacos','🌮',25,[['tortillas',8],['fish',1],['oil',1],['chili-powder',.1],['cumin',.05],['cabbage',.3,true],['citrus',.2,true],['hot-sauce',.5,true]],
+ 'Season fish with chili powder and cumin, pan-fry in oil 3 minutes a side and flake. Warm tortillas, add fish, shredded cabbage, lime and hot sauce.',['gf']),
+R('veg-curry','Potato and vegetable curry','🍛',40,[['potatoes',1.5],['coconut-milk',1],['curry-powder',.3],['onions',.5],['garlic',.2],['frozen-veg',1],['oil',1],['rice',.75]],
+ 'Fry onion and garlic, bloom curry powder, add diced potatoes, coconut milk and 1 cup water. Simmer 20 minutes, add vegetables for the last 5. Over rice.',['veg','gf']),
+R('split-pea','Split pea soup','🍲',75,[['split-peas',1],['onions',.5],['carrots',.3,true],['bouillon',6],['garlic',.2],['sausage',.5,true],['bay',.02,true]],
+ 'Simmer peas, onion, carrot, garlic, bay and 8 cups water with bouillon for an hour, stirring now and then, until the peas collapse. Sausage makes it a meal.',['gf']),
+];
+</script>
+<script>
+/* ============================================================ helpers */
+const $=s=>document.querySelector(s);
+const DAY=86400000;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseISO=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const fmt=d=>{if(typeof d==='string')d=parseISO(d);return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});};
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const num=(x,dp=1)=>{const n=Number(x)||0; return Number.isInteger(n)?String(n):n.toFixed(dp).replace(/\.?0+$/,'');};
+const money=x=>'$'+(Math.round(x*100)/100).toFixed(2).replace(/\.00$/,'');
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+const STORES={dry:{label:'Dry shelves',e:'🗄️'},fridge:{label:'Fridge',e:'🧊'},freezer:{label:'Freezer',e:'❄️'}};
+const CATS=[...new Set(STAPLES.map(s=>s.cat))];
+const TIER={1:'Essential',2:'Standard',3:'Nice to have'};
+
+/* ============================================================ state */
+const KEY='shelfAndWeeks.v1';
+let state=null, storageOK=true;
+const ui={tab:'stock',q:'',cat:'',only:'',wiz:0,rtab:'now'};
+function fresh(){return {version:1,setup:false,name:'Home pantry',adults:2,kids:0,weeks:4,
+  space:{shelves:5,w:36,d:16,h:12,fridge:12,freezer:6},prefs:{veg:false,gf:false,bake:false,water:false,fridge:true,freezer:true},
+  items:{},customStaples:[],customRecipes:[],wanted:{},settings:{theme:'auto'}};}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const s=Object.assign(fresh(),JSON.parse(r));s.items=s.items||{};s.wanted=s.wanted||{};s.customStaples=s.customStaples||[];s.customRecipes=s.customRecipes||[];return s;}}catch(e){}return fresh();}
+function save(){state.rev=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}schedulePush();}
+function saveLocalOnly(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}}
+
+/* ============================================================ plan maths */
+function allStaples(){return STAPLES.map(s=>state.items[s.id]?.madeOverride?Object.assign({},s,{made:true}):s).concat(state.customStaples.map(c=>Object.assign({},c,{custom:true})));}
+function staple(id){return allStaples().find(s=>s.id===id);}
+function it(id){return state.items[id]||(state.items[id]={on:0,exp:null,off:false});}
+const people=()=>state.adults+0.6*state.kids;
+function inPrefs(s){const p=state.prefs;
+  if(p.veg&&s.tags.includes('meat'))return false; if(p.gf&&s.tags.includes('gluten'))return false;
+  if(!p.bake&&s.tags.includes('bake'))return false; if(!p.water&&s.tags.includes('water'))return false;
+  if(!p.fridge&&s.store==='fridge')return false; if(!p.freezer&&s.store==='freezer')return false; return true;}
+function planned(){return allStaples().filter(s=>inPrefs(s)&&!it(s.id).off);}
+function rate(s){const o=state.items[s.id];const per=o&&o.per!=null?o.per:s.per;return per*people();}
+function target(s){return rate(s)*state.weeks;}
+function pkgs(s,qty){return Math.max(0,Math.ceil((qty-1e-9)/s.pkg));}
+function targetRounded(s){return pkgs(s,target(s))*s.pkg;}
+function price(s){const o=state.items[s.id];return o&&o.price!=null?o.price:s.price;}
+function capacity(store){const sp=state.space;
+  if(store==='dry')return sp.shelves*sp.w*sp.d*sp.h*0.75; if(store==='fridge')return (state.prefs.fridge?sp.fridge:0)*1728*0.5; return (state.prefs.freezer?sp.freezer:0)*1728*0.7;}
+function usage(store){return planned().filter(s=>s.store===store).reduce((a,s)=>a+targetRounded(s)*s.vol,0);}
+function perWeekVol(store){return planned().filter(s=>s.store===store).reduce((a,s)=>a+rate(s)*s.vol,0);}
+function fitWeeks(store){const v=perWeekVol(store);return v?Math.floor(capacity(store)/v):Infinity;}
+function status(s){const o=it(s.id);const t=targetRounded(s)||target(s);const on=o.on||0;const r=rate(s);const days=r>0?on/(r/7):Infinity;const ratio=t>0?on/t:1;
+  let st='stocked',cls='good',label='Stocked'; if(on<=0){st='out';cls='bad';label='Out';} else if(ratio<0.34){st='low';cls='bad';label='Low';} else if(ratio<0.75){st='ok';cls='ok';label='Getting low';}
+  let exp=null; if(o.exp){const d=Math.round((parseISO(o.exp)-today())/DAY); if(d<0)exp={d,label:'Expired',cls:'bad'}; else if(d<=30)exp={d,label:`Expires in ${d}d`,cls:'ok'};}
+  return {st,cls,label,ratio,days,on,t,exp};}
+function shopping(){const ex=extraDemand();return planned().filter(s=>!makeAtHome(s)).map(s=>{const need=targetRounded(s)+(ex[s.id]||0)-(it(s.id).on||0);const extra=state.wanted[s.id]||0;const n=pkgs(s,Math.max(need,0)+extra);return n>0?{s,n,qty:n*s.pkg,cost:n*price(s),wanted:extra>0}:null;}).filter(Boolean);}
+function scale(){return people()/4;}
+function allRecipes(){return RECIPES.concat(state.customRecipes.map(r=>Object.assign({},r,{custom:true})));}
+function recipe(id){return allRecipes().find(r=>r.id===id);}
+function recipeFor(stapleId){return allRecipes().find(r=>r.yields&&r.yields.id===stapleId);}
+function makeAtHome(s){return !!(s.made&&it(s.id).make&&recipeFor(s.id));}
+function batchesNeeded(s){const r=recipeFor(s.id);if(!r)return 0;const need=targetRounded(s)-(it(s.id).on||0);return need>0?Math.ceil(need/r.yields.qty):0;}
+function extraDemand(){const ex={};planned().filter(makeAtHome).forEach(s=>{const r=recipeFor(s.id);const b=batchesNeeded(s);if(!b)return;r.ings.forEach(([id,q,opt])=>{if(!opt)ex[id]=(ex[id]||0)+q*b;});});return ex;}
+function recipeCheck(r,batches){const sc=r.yields?(batches||1):scale();const rows=r.ings.map(([id,q,opt])=>{const s=staple(id);const need=q*sc;const on=s?(it(id).on||0):0;const have=!!s&&on>=need-1e-9;return {s,id,need,on,have,opt:!!opt};});
+  const missing=rows.filter(x=>!x.have&&!x.opt);const ok=r.tags.every(t=>true)&&!(state.prefs.veg&&r.ings.some(([id])=>staple(id)?.tags.includes('meat')&&!r.ings.find(x=>x[0]===id)[2]))&&!(state.prefs.gf&&r.ings.some(([id,q,opt])=>!opt&&staple(id)?.tags.includes('gluten')));
+  return {rows,missing,can:missing.length===0,fits:ok};}
+function anyStock(){return Object.values(state.items).some(o=>o.on>0);}
+function alerts(){const out=[];const started=anyStock();
+  planned().forEach(s=>{const st=status(s); if(st.st==='out'){if(started)out.push({type:'out',id:s.id,text:`${s.n}: out — plan calls for ${num(st.t)} ${s.unit}`});} else if(st.st==='low')out.push({type:'low',id:s.id,text:`${s.n}: ${num(st.on)} ${s.unit} left, about ${Math.round(st.days)} days`}); if(st.exp)out.push({type:'exp',id:s.id,text:`${s.n}: ${st.exp.label.toLowerCase()} (${fmt(it(s.id).exp)})`});});
+  ['dry','fridge','freezer'].forEach(st=>{const u=usage(st),c=capacity(st); if(c>0&&u>c)out.push({type:'space',id:null,store:st,text:`${STORES[st].label}: plan needs ${Math.round(u/c*100)}% of the space — fits about ${fitWeeks(st)} weeks, not ${state.weeks}`});});
+  return out;}
+
+/* ============================================================ render */
+function render(){
+  const th=state.settings.theme; if(th==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.dataset.theme=th;
+  if(!state.setup){renderWizard();return;}
+  const al=alerts();const urgent=al.filter(a=>a.type!=='exp').length;const shop=shopping();
+  $('#app').innerHTML=`<header class="bar"><div class="title"><h1>${esc(state.name)}</h1><small>${num(people(),1)} adult-equivalents · ${state.weeks} weeks of stock</small></div>
+    ${spacePill()}${syncPill()}<div class="spacer"></div><button class="small" data-act="tab" data-tab="shopping">Shopping list${shop.length?` <span class="n" style="display:inline-block;min-width:1.4em;padding:0 .35em;border-radius:999px;background:var(--moss);color:var(--moss-ink);font-size:.75rem;text-align:center">${shop.length}</span>`:''}</button></header>
+  <main><div class="content"><div class="tabs">
+    ${[['stock','Stock'],['shopping','Shopping'],['recipes','Recipes'],['alerts','Alerts'],['settings','Settings']].map(([k,l])=>`<button data-act="tab" data-tab="${k}" class="${ui.tab===k?'active':''}">${l}${k==='alerts'&&urgent?`<span class="n">${urgent}</span>`:''}</button>`).join('')}</div>
+    <div id="content">${renderTab()}</div></div><aside class="panel">${renderSide(al)}</aside></main>`;
+  if(!storageOK)toast('Browser storage unavailable — export a backup from Settings.');
+}
+function spacePill(){const st=['dry','fridge','freezer'].filter(s=>capacity(s)>0);const worst=Math.max(...st.map(s=>usage(s)/capacity(s)));const cls=worst>1?'bad':worst>0.85?'warn':'';return `<span class="pill ${cls}" title="Highest space usage across dry, fridge and freezer">${worst>1?'⚠️ Over capacity':worst>0.85?'Nearly full':'Space OK'} · ${Math.round(worst*100)}%</span>`;}
+function renderTab(){switch(ui.tab){case 'shopping':return renderShopping();case 'recipes':return renderRecipes();case 'alerts':return renderAlerts();case 'settings':return renderSettings();default:return renderStock();}}
+function gauge(store){const u=usage(store),c=capacity(store);if(c<=0)return '';const p=Math.min(1,u/c);const cls=u>c?'bad':p>0.85?'warn':'';const fw=fitWeeks(store);
+  return `<div style="margin:.5em 0"><div class="row between tiny"><b>${STORES[store].e} ${STORES[store].label}</b><span class="muted">${Math.round(u/c*100)}% · fits ~${fw===Infinity?'∞':fw} wk</span></div><div class="gauge"><i class="${cls}" style="width:${p*100}%"></i></div></div>`;}
+function renderSide(al){const shop=shopping();const cost=shop.reduce((a,x)=>a+x.cost,0);const can=RECIPES.filter(r=>recipeCheck(r).can).length;
+  let h=`<div class="stack"><div class="card accent"><b>${state.weeks}-week plan for ${state.adults} adult${state.adults===1?'':'s'}${state.kids?` + ${state.kids} kid${state.kids===1?'':'s'}`:''}</b><div class="muted tiny" style="margin-top:.2em">${planned().length} staples in the plan · ${can} recipes you can cook right now</div></div>
+  <div><h3>Space</h3>${gauge('dry')}${gauge('fridge')}${gauge('freezer')}<p class="tiny muted">Volumes are estimates from typical package sizes; 25% of shelf space is reserved for air and awkward shapes.</p></div>`;
+  if(shop.length)h+=`<div class="card"><b>To buy:</b> ${shop.length} item${shop.length===1?'':'s'}, roughly ${money(cost)} <button class="small" data-act="tab" data-tab="shopping" style="margin-left:.4em">Open</button></div>`;
+  const top=al.filter(a=>a.type!=='exp').slice(0,6); if(!anyStock())h+=`<div class="card"><b>Next step:</b> go through the Stock tab and enter what you already have. Everything else — alerts, the shopping list, recipes — follows from that.</div>`; if(top.length)h+=`<div><h3>Needs attention</h3><ul class="alerts">${top.map(a=>`<li data-act="${a.id?'detail':'tab'}" data-id="${a.id||''}" data-tab="alerts"><span class="dot ${a.type}"></span><span>${esc(a.text)}</span></li>`).join('')}</ul></div>`;
+  h+=`<div class="row"><button class="small" data-act="custom-new">+ Add a staple</button><button class="small" data-act="tab" data-tab="settings">Edit plan</button></div></div>`;return h;}
+function renderStock(){
+  let list=allStaples().filter(inPrefs); const q=ui.q.toLowerCase();
+  if(ui.cat)list=list.filter(s=>s.cat===ui.cat); if(q)list=list.filter(s=>(s.n+' '+s.cat).toLowerCase().includes(q));
+  if(ui.only==='attn')list=list.filter(s=>!it(s.id).off&&(status(s).st!=='stocked'||status(s).exp)); if(ui.only==='tier1')list=list.filter(s=>s.tier===1);
+  let h=`<div class="row" style="margin-bottom:.5em"><input placeholder="Search staples" value="${esc(ui.q)}" data-act="q" style="flex:1;min-width:140px">
+    <select data-act="cat" style="width:auto"><option value="">All categories</option>${CATS.map(c=>`<option ${ui.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+    <select data-act="only" style="width:auto"><option value="">Everything</option><option value="attn" ${ui.only==='attn'?'selected':''}>Needs attention</option><option value="tier1" ${ui.only==='tier1'?'selected':''}>Essentials only</option></select></div>
+    <p class="tiny muted">Target = what ${state.weeks} weeks takes, rounded up to whole packages. Type what you actually have on hand; use +pkg when you unpack groceries. Click a name for details, expiry date and per-week adjustments. Items marked <span class="chip info" style="font-size:.7rem">made from raw</span> can be switched between buying and making — when you make them, the raw ingredients they need are added to the shopping list instead.</p>`;
+  const over=['dry','fridge','freezer'].filter(st=>capacity(st)>0&&usage(st)>capacity(st));
+  if(over.length){const st=over[0];const cand=planned().filter(s=>s.store===st&&s.tier===3).sort((a,b)=>b.vol*targetRounded(b)-a.vol*targetRounded(a)).slice(0,5);
+    h+=`<div class="card" style="background:var(--alert-soft);margin-bottom:.6em"><b>${STORES[st].label} is over capacity.</b> Options: drop to ${fitWeeks(st)} weeks in Settings, add shelf space, or take these nice-to-haves out of the plan: ${cand.map(s=>`<button class="tiny" data-act="off" data-id="${s.id}">${esc(s.n)} ✕</button>`).join(' ')||'(no extras left to cut)'}</div>`;}
+  let cat='';list.sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||a.tier-b.tier||a.n.localeCompare(b.n));
+  list.forEach(s=>{if(s.cat!==cat){cat=s.cat;h+=`<div class="cat-h"><h3>${esc(cat)}</h3></div>`;}
+    const o=it(s.id),st=status(s);const off=o.off;
+    h+=`<div class="item ${off?'off':''}" data-id="${s.id}"><div class="em">${s.e}</div>
+      <div class="nm" style="cursor:pointer" data-act="detail" data-id="${s.id}">${esc(s.n)}${s.custom?' <span class="chip">custom</span>':''}<small>${s.pkgName} · ${TIER[s.tier]}${s.made?` · <span class="chip info" style="font-size:.7rem">made from raw</span>`:''}${st.exp?` · <span style="color:${st.exp.cls==='bad'?'var(--alert)':'inherit'}">${st.exp.label}</span>`:''}</small></div>
+      <div class="tgt">${off?'<span class="muted">not in plan</span>':`${num(targetRounded(s))} ${s.unit}<small>${pkgs(s,target(s))} × ${s.pkgName} · ${num(rate(s),2)}/wk</small>`}</div>
+      <div class="qty"><button class="tiny" data-act="dec" data-id="${s.id}" aria-label="Use one">−</button><input type="number" min="0" step="any" value="${num(o.on||0,2)}" data-act="on" data-id="${s.id}" aria-label="On hand"><span>${s.unit}</span><button class="tiny" data-act="inc" data-id="${s.id}" title="Add one package (${s.pkgName})" style="white-space:nowrap">+pkg</button></div>
+      <div class="st">${off?`<button class="tiny" data-act="off" data-id="${s.id}">Add to plan</button>`:`<span class="chip ${st.cls}">${st.label}</span>${s.made?`<span class="row" style="gap:.2em">${recipeFor(s.id)?`<button class="tiny" data-act="make-toggle" data-id="${s.id}" title="Make it at home, or buy it?">${it(s.id).make?'🏠 making':'🛒 buying'}</button><button class="tiny" data-act="recipe" data-id="${recipeFor(s.id).id}">Make</button>`:`<button class="tiny" data-act="recipe-new" data-out="${s.id}" title="Add a recipe that makes this">+ recipe</button>`}</span>`:''}<div class="bar"><i class="${st.cls==='bad'?'bad':st.cls==='ok'?'warn':''}" style="width:${Math.min(100,st.ratio*100)}%"></i></div><span class="tiny muted">${st.days===Infinity?'':Math.round(st.days)+' days'}</span>`}</div></div>`;});
+  if(!list.length)h+=`<p class="muted">Nothing matches.</p>`;
+  return h;}
+function renderShopping(){const shop=shopping();const cost=shop.reduce((a,x)=>a+x.cost,0);
+  let h=`<div class="row between"><h2>Shopping list</h2><div class="row"><button class="small" data-act="copy-shop">Copy as text</button><button class="small primary" data-act="bought-all" ${shop.length?'':'disabled'}>Bought everything</button></div></div>
+  <p class="tiny muted">Whatever it takes to get every planned staple back to its ${state.weeks}-week target, in whole packages. Prices are rough estimates — edit them per item. Tick items as you buy them and the on-hand count updates.</p>`;
+  const mk=toMake();
+  if(mk.length)h+=`<h3>Make at home</h3><ul class="shop" style="list-style:none;padding:0;margin:0 0 1em">${mk.map(x=>`<li><span>${x.s.e}</span><b>${esc(x.s.n)}</b><span class="muted">${x.b} batch${x.b===1?'':'es'} of ${esc(x.r.n)} → ${num(x.b*x.r.yields.qty)} ${x.s.unit}</span><button class="tiny" data-act="recipe" data-id="${x.r.id}">Recipe</button></li>`).join('')}</ul><p class="tiny muted">The raw ingredients for these batches are already counted in the list below.</p>`;
+  if(!shop.length)return h+`<div class="card">${mk.length?'Nothing to buy — everything left is on the make-at-home list.':'Fully stocked. Nothing to buy.'}</div>`;
+  let cat='';h+=`<ul class="shop" style="list-style:none;padding:0;margin:0">`;
+  shop.sort((a,b)=>CATS.indexOf(a.s.cat)-CATS.indexOf(b.s.cat)||a.s.n.localeCompare(b.s.n)).forEach(x=>{if(x.s.cat!==cat){cat=x.s.cat;h+=`<li style="border:0;padding-top:.8em"><h3>${esc(cat)}</h3></li>`;}
+    h+=`<li><input type="checkbox" data-act="bought" data-id="${x.s.id}" data-n="${x.n}" aria-label="Bought"><span>${x.s.e}</span><b>${esc(x.s.n)}${x.wanted?' <span class="chip info">for a recipe</span>':''}</b><span class="muted">${x.n} × ${x.s.pkgName}</span><span class="muted tiny">${money(x.cost)}</span></li>`;});
+  h+=`</ul><div class="card" style="margin-top:1em"><b>Estimated total: ${money(cost)}</b> for ${shop.length} items</div>`;return h;}
+function renderRecipes(){const sc=scale();const checked=allRecipes().map(r=>({r,c:recipeCheck(r)})).filter(x=>x.c.fits&&!x.r.yields);
+  const makers=allRecipes().filter(r=>r.yields).map(r=>{const s=staple(r.yields.id);return {r,s,c:recipeCheck(r,1),b:s?batchesNeeded(s):0};});
+  const now=checked.filter(x=>x.c.can),near=checked.filter(x=>!x.c.can&&x.c.missing.length<=2),rest=checked.filter(x=>x.c.missing.length>2);
+  const item=x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}</div><div class="meta">${x.r.time} min · ${x.r.ings.filter(i=>!i[2]).length} ingredients${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}${x.c.missing.length>3?` +${x.c.missing.length-3}`:''}`:''}</div></div></div>`;
+  let h=`<div class="row between"><h2>Recipes from the pantry</h2><button class="small primary" data-act="recipe-new">+ Add a recipe</button></div><p class="tiny muted">Meals are scaled to your household (${num(sc*4,1)} servings). Marking one as cooked subtracts its ingredients from what you have on hand.</p>`;
+  if(makers.length)h+=`<h3 style="margin-top:.8em">Make for the shelf</h3><p class="tiny muted">Recipes that turn raw ingredients into a stocked item. Making one subtracts the ingredients and adds the result to stock.</p>${makers.map(x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}</div><div class="meta">${x.r.time} min · makes ${num(x.r.yields.qty)} ${x.s?x.s.unit+' of '+esc(x.s.n):esc(x.r.yields.id)}${x.b?` · <b>${x.b} batch${x.b===1?'':'es'} needed</b>`:''}${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}`:' · <span class="chip good" style="font-size:.7rem">ready</span>'}</div></div></div>`).join('')}`;
+  h+=`<h3 style="margin-top:1em">Cook tonight <span class="muted" style="font-weight:400">(${now.length})</span></h3>${now.map(item).join('')||'<p class="muted tiny">Nothing yet — stock a few essentials first.</p>'}`;
+  if(near.length)h+=`<h3 style="margin-top:1em">One or two items short <span class="muted" style="font-weight:400">(${near.length})</span></h3>${near.map(item).join('')}`;
+  if(rest.length)h+=`<h3 style="margin-top:1em">Everything else</h3>${rest.map(item).join('')}`;return h;}
+function renderAlerts(){const al=alerts();const groups=[['out','Out of stock'],['low','Running low'],['exp','Expiring or expired'],['space','Space']];
+  let h=`<h2>Alerts</h2>`;if(!anyStock())h+=`<div class="card">Start by entering what you have on hand in the Stock tab — out-of-stock alerts switch on once you have logged anything.</div>`;else if(!al.length)h+=`<div class="card">All good. Stock is at target and nothing is expiring.</div>`;
+  groups.forEach(([t,l])=>{const x=al.filter(a=>a.type===t);if(!x.length)return;h+=`<h3 style="margin-top:1em">${l} <span class="muted" style="font-weight:400">(${x.length})</span></h3><ul class="alerts">${x.map(a=>`<li data-act="${a.id?'detail':'tab'}" data-id="${a.id||''}" data-tab="settings"><span class="dot ${a.type}"></span><span>${esc(a.text)}</span></li>`).join('')}</ul>`;});
+  h+=`<hr><h3>Rotation tips</h3><ul class="tiny muted" style="padding-left:1.2em"><li>Shop from your own shelves first: new packages go to the back, older ones come forward.</li><li>Cans and dry goods are usually fine well past the printed "best by"; oils, nuts, whole-grain flours and brown rice are the ones that actually turn.</li><li>Set an expiry date only on the things that matter — yeast, oils, coffee, eggs, meat — and let the rest ride.</li></ul>`;return h;}
+function renderSettings(){const sp=state.space,p=state.prefs;
+  return `<h2>Settings</h2><div class="stack">
+  <div class="grid3"><div><label>Pantry name</label><input value="${esc(state.name)}" data-set="name"></div><div><label>Adults</label><input type="number" min="1" max="20" value="${state.adults}" data-set="adults"></div><div><label>Kids <span class="hint">(count 0.6)</span></label><input type="number" min="0" max="20" value="${state.kids}" data-set="kids"></div></div>
+  <label>Weeks of stock to keep: <b id="wkLabel">${state.weeks}</b></label><input type="range" min="1" max="26" value="${state.weeks}" data-set="weeks">
+  <h3>Storage space</h3><p class="tiny muted">Dry shelves: number of shelves and the usable width, depth and clearance of each, in inches.</p>
+  <div class="grid3"><div><label>Shelves</label><input type="number" min="0" value="${sp.shelves}" data-set="space.shelves"></div><div><label>Width (in)</label><input type="number" min="0" value="${sp.w}" data-set="space.w"></div><div><label>Depth (in)</label><input type="number" min="0" value="${sp.d}" data-set="space.d"></div></div>
+  <div class="grid3"><div><label>Clearance (in)</label><input type="number" min="0" value="${sp.h}" data-set="space.h"></div><div><label>Fridge (cu ft) <span class="hint">half counted for staples</span></label><input type="number" min="0" value="${sp.fridge}" data-set="space.fridge"></div><div><label>Freezer (cu ft)</label><input type="number" min="0" value="${sp.freezer}" data-set="space.freezer"></div></div>
+  <h3>Cooking style</h3>
+  <label class="check"><input type="checkbox" ${p.fridge?'checked':''} data-set="prefs.fridge">Include fridge items <span class="hint">(eggs, butter, cheese, milk)</span></label>
+  <label class="check"><input type="checkbox" ${p.freezer?'checked':''} data-set="prefs.freezer">Include freezer items <span class="hint">(meat, frozen vegetables, bread)</span></label>
+  <label class="check"><input type="checkbox" ${p.veg?'checked':''} data-set="prefs.veg">Vegetarian <span class="hint">(no meat or fish)</span></label>
+  <label class="check"><input type="checkbox" ${p.gf?'checked':''} data-set="prefs.gf">Gluten-free <span class="hint">(no wheat flour, pasta, bread)</span></label>
+  <label class="check"><input type="checkbox" ${p.bake?'checked':''} data-set="prefs.bake">I bake bread at home <span class="hint">(adds bread flour, yeast, brown sugar, baking extras)</span></label>
+  <label class="check"><input type="checkbox" ${p.water?'checked':''} data-set="prefs.water">Stock emergency drinking water <span class="hint">(1 gal per person per day — big)</span></label>
+  <label>Theme</label><select data-set="settings.theme"><option value="auto" ${state.settings.theme==='auto'?'selected':''}>Match device</option><option value="light" ${state.settings.theme==='light'?'selected':''}>Light</option><option value="dark" ${state.settings.theme==='dark'?'selected':''}>Dark</option></select>
+  <hr><h3>Your staples and recipes</h3><p class="tiny muted">${state.customStaples.length} custom staple${state.customStaples.length===1?'':'s'}, ${state.customRecipes.length} custom recipe${state.customRecipes.length===1?'':'s'}.</p><div class="row"><button data-act="custom-new">+ Add a staple</button><button data-act="recipe-new">+ Add a recipe</button></div>
+  <hr><h3>Share with your household</h3>${renderSyncSettings()}
+  <hr><h3>Your data</h3><p class="tiny muted">Everything lives in this browser${syncReady()?' and in your shared household table':''}. Export a backup to keep it or move it to another device.</p>
+  <div class="row"><button data-act="export">Export backup (.json)</button><button data-act="import">Import backup</button><input type="file" id="importFile" accept="application/json" class="sr"></div>
+  <hr><div class="row"><button data-act="rerun">Re-run setup wizard</button><button class="danger" data-act="reset">Start over (deletes everything)</button></div>
+  <p class="tiny muted" style="margin-top:1.5em">Weekly amounts are typical for a household cooking mostly from scratch; adjust any item's per-week rate from its detail view and the whole plan follows.</p></div>`;}
+
+/* ============================================================ dialogs */
+const dlg=()=>$('#dlg');function openDialog(h){$('#dlgBody').innerHTML=h;if(!dlg().open)dlg().showModal();}function closeDialog(){if(dlg().open)dlg().close();}
+function showDetail(id){const s=staple(id);if(!s)return;const o=it(id),st=status(s);const uses=RECIPES.filter(r=>r.ings.some(i=>i[0]===id));
+  openDialog(`<div class="row between"><h2>${s.e} ${esc(s.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
+  <div class="row" style="gap:.3em;margin:.4em 0"><span class="chip ${st.cls}">${st.label}</span><span class="chip">${esc(s.cat)}</span><span class="chip">${TIER[s.tier]}</span><span class="chip">${STORES[s.store].e} ${STORES[s.store].label}</span>${st.exp?`<span class="chip ${st.exp.cls}">${st.exp.label}</span>`:''}</div>
+  <div class="kv"><b>Target</b><span>${num(targetRounded(s))} ${s.unit} = ${pkgs(s,target(s))} × ${s.pkgName} for ${state.weeks} weeks</span><b>On hand</b><span>${num(st.on,2)} ${s.unit}${st.days!==Infinity?` — about ${Math.round(st.days)} days`:''}</span><b>Shelf life</b><span>${s.life>=999?'Indefinite':s.life<1?Math.round(s.life*30)+' days':s.life+' months'} unopened</span><b>Space</b><span>${Math.round(targetRounded(s)*s.vol)} cu in at target</span></div>
+  ${s.note?`<p style="margin-top:.6em">${esc(s.note)}</p>`:''}
+  <div class="grid3" style="margin-top:.6em"><div><label>On hand (${s.unit})</label><input type="number" min="0" step="any" id="dOn" value="${num(st.on,2)}"></div><div><label>Per adult per week</label><input type="number" min="0" step="any" id="dPer" value="${num(o.per!=null?o.per:s.per,2)}"></div><div><label>Price per ${esc(s.pkgName)}</label><input type="number" min="0" step="any" id="dPrice" value="${num(price(s),2)}"></div></div>
+  <label>Expiry / best-by of the oldest package <span class="hint">(optional)</span></label><input type="date" id="dExp" value="${o.exp||''}">
+  ${uses.length?`<p class="tiny muted" style="margin-top:.6em">Used in: ${uses.map(r=>r.n).join(', ')}</p>`:''}
+  <div class="row" style="margin-top:1em"><button class="primary" data-act="detail-save" data-id="${id}">Save</button><button data-act="off" data-id="${id}">${o.off?'Add to plan':'Remove from plan'}</button>${s.custom?`<button data-act="custom-edit" data-id="${id}">Edit staple</button><button class="danger" data-act="custom-del" data-id="${id}">Delete</button>`:''}<button class="ghost" data-act="dlg-close">Cancel</button></div>`);}
+function showRecipe(id,batches){const r=recipe(id);if(!r)return;batches=Math.max(1,Number(batches)||1);const c=recipeCheck(r,batches);const sc=scale();const ys=r.yields?staple(r.yields.id):null;
+  openDialog(`<div class="row between"><h2>${r.e} ${esc(r.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
+  <p class="tiny muted">${r.time} min · ${r.yields?`makes ${num(r.yields.qty*batches)} ${ys?ys.unit+' of '+esc(ys.n):esc(r.yields.id)}`:`${num(sc*4,1)} servings`} · ${c.can?'<span class="chip good">You have everything</span>':`<span class="chip bad">Missing ${c.missing.length}</span>`}</p>
+  ${r.yields?`<div class="row" style="margin:.4em 0"><label style="margin:0">Batches</label><input type="number" min="1" value="${batches}" id="rBatches" data-act="batches" data-id="${id}" style="width:80px">${ys&&batchesNeeded(ys)?`<span class="tiny muted">${batchesNeeded(ys)} needed to reach target</span>`:''}</div>`:''}
+  <div class="ing">${c.rows.map(x=>`<span class="${x.have||x.opt?'':'no'}">${x.s?x.s.e+' '+esc(x.s.n):esc(x.id)}${x.opt?' <span class="muted tiny">(optional)</span>':''}</span><span>${num(x.need,2)} ${x.s?x.s.unit:''}</span><span class="tiny ${x.have?'muted':'no'}">${x.have?'✓':x.opt?'—':'have '+num(x.on,2)}</span>`).join('')}</div>
+  <h3 style="margin-top:.8em">Method</h3><p>${esc(r.steps)}</p>
+  <div class="row" style="margin-top:1em"><button class="primary" data-act="cooked" data-id="${id}" data-b="${batches}" ${c.can?'':'disabled'}>${r.yields?'Made it — subtract ingredients, add to stock':'Cooked it — subtract ingredients'}</button>${c.missing.length?`<button data-act="want" data-id="${id}" data-b="${batches}">Add missing to shopping list</button>`:''}${r.custom?`<button data-act="recipe-edit" data-id="${id}">Edit</button><button class="danger" data-act="recipe-del" data-id="${id}">Delete</button>`:''}<button class="ghost" data-act="dlg-close">Close</button></div>`);}
+function showCustomForm(id){const s=id?staple(id):null;
+  openDialog(`<div class="row between"><h2>${s?'Edit staple':'Add a staple'}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
+  <form id="cf" class="stack" onsubmit="return false"><input type="hidden" name="id" value="${s?s.id:''}">
+  <div class="grid3"><div style="grid-column:1/3"><label>Name</label><input name="n" required value="${esc(s?.n||'')}"></div><div><label>Emoji</label><input name="e" value="${esc(s?.e||'🥫')}" maxlength="4"></div></div>
+  <div class="grid2"><div><label>Category</label><select name="cat">${CATS.map(c=>`<option ${s?.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div><label>Stored in</label><select name="store"><option value="dry" ${s?.store==='dry'?'selected':''}>Dry shelves</option><option value="fridge" ${s?.store==='fridge'?'selected':''}>Fridge</option><option value="freezer" ${s?.store==='freezer'?'selected':''}>Freezer</option></select></div></div>
+  <div class="grid3"><div><label>Unit</label><input name="unit" required value="${esc(s?.unit||'lb')}" placeholder="lb, oz, can, each"></div><div><label>Per adult per week</label><input name="per" type="number" min="0" step="any" required value="${s?s.per:''}"></div><div><label>Priority</label><select name="tier"><option value="1" ${s?.tier===1?'selected':''}>Essential</option><option value="2" ${!s||s.tier===2?'selected':''}>Standard</option><option value="3" ${s?.tier===3?'selected':''}>Nice to have</option></select></div></div>
+  <div class="grid3"><div><label>Package size <span class="hint">(in units)</span></label><input name="pkg" type="number" min="0.01" step="any" required value="${s?s.pkg:''}"></div><div><label>Package name</label><input name="pkgName" required value="${esc(s?.pkgName||'')}" placeholder="2 lb bag"></div><div><label>Price per package ($)</label><input name="price" type="number" min="0" step="any" value="${s?s.price:''}"></div></div>
+  <div class="grid2"><div><label>Space per unit <span class="hint">(cubic inches)</span></label><input name="vol" type="number" min="0" step="any" required value="${s?s.vol:''}" placeholder="a 15 oz can ≈ 32"></div><div><label>Shelf life (months)</label><input name="life" type="number" min="0" step="any" required value="${s?s.life:''}"></div></div>
+  <label class="check"><input type="checkbox" name="made" ${s?.made?'checked':''}>Made from raw ingredients <span class="hint">— not a raw ingredient itself (bread, crackers, tortillas, sauce). You can then add a recipe that produces it and choose to make it instead of buying it.</span></label>
+  <label>Notes</label><textarea name="note">${esc(s?.note||'')}</textarea>
+  <div class="row"><button class="primary" data-act="custom-save">Save</button><button class="ghost" data-act="dlg-close">Cancel</button></div></form>`);}
+function saveCustom(){const f=$('#cf');if(!f.reportValidity())return;const fd=new FormData(f);const id=fd.get('id')||('custom-'+Date.now());
+  const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🥫').trim()||'🥫',cat:fd.get('cat'),unit:fd.get('unit').trim(),per:Number(fd.get('per')),pkg:Number(fd.get('pkg')),pkgName:fd.get('pkgName').trim(),vol:Number(fd.get('vol')),life:Number(fd.get('life')),store:fd.get('store'),tier:Number(fd.get('tier')),tags:[],price:Number(fd.get('price'))||0,note:fd.get('note').trim(),made:fd.get('made')==='on'};
+  const i=state.customStaples.findIndex(c=>c.id===id);if(i>=0)state.customStaples[i]=rec;else state.customStaples.push(rec);save();closeDialog();toast(`Saved ${rec.n}`);render();}
+
+function stapleOptions(sel){return allStaples().slice().sort((a,b)=>a.n.localeCompare(b.n)).map(s=>`<option value="${s.id}" ${sel===s.id?'selected':''}>${esc(s.n)} (${s.unit})</option>`).join('');}
+function ingRowHTML(id,q,opt){return `<div class="ingrow row" style="flex-wrap:nowrap;margin:.3em 0"><select name="ing" style="flex:2;min-width:0">${stapleOptions(id)}</select><input name="qty" type="number" min="0" step="any" value="${q!=null?q:''}" placeholder="qty" style="width:80px" required><label class="check tiny" style="margin:0"><input type="checkbox" name="opt" ${opt?'checked':''}>opt.</label><button class="tiny ghost" data-act="ing-del" aria-label="Remove">✕</button></div>`;}
+function addIngRow(){$('#ings').insertAdjacentHTML('beforeend',ingRowHTML(null,null,false));}
+function showRecipeForm(id,outId){const r=id?recipe(id):null;const y=r?.yields||(outId?{id:outId,qty:1}:null);
+  openDialog(`<div class="row between"><h2>${r?'Edit recipe':'Add a recipe'}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
+  <form id="rf" class="stack" onsubmit="return false"><input type="hidden" name="id" value="${r?r.id:''}">
+  <div class="grid3"><div style="grid-column:1/3"><label>Name</label><input name="n" required value="${esc(r?.n||'')}"></div><div><label>Emoji</label><input name="e" value="${esc(r?.e||'🍽️')}" maxlength="4"></div></div>
+  <label>Time (minutes)</label><input name="time" type="number" min="1" value="${r?.time||30}" style="max-width:160px">
+  <label>Ingredients <span class="hint">(in each staple's unit. A meal is written for 4 servings and scaled to your household; a recipe that produces a stocked item is written per batch.)</span></label>
+  <div id="ings">${(r?r.ings:[[null,null,false],[null,null,false],[null,null,false]]).map(([i,q,o])=>ingRowHTML(i,q,o)).join('')}</div>
+  <button class="small" data-act="ing-add">+ ingredient</button>
+  <label class="check"><input type="checkbox" name="hasYield" ${y?'checked':''}>This recipe produces a stocked item <span class="hint">(bread, crackers, sauce…)</span></label>
+  <div id="yieldBox" class="grid2" style="${y?'':'display:none'}"><div><label>Produces</label><select name="yid">${stapleOptions(y?.id)}</select></div><div><label>Amount per batch</label><input name="yqty" type="number" min="0.01" step="any" value="${y?y.qty:1}"></div></div>
+  <label>Method</label><textarea name="steps" required>${esc(r?.steps||'')}</textarea>
+  <div class="row"><button class="primary" data-act="recipe-save">Save recipe</button><button class="ghost" data-act="dlg-close">Cancel</button></div></form>`);}
+function saveRecipe(){const f=$('#rf');if(!f.reportValidity())return;const fd=new FormData(f);
+  const rows=[...f.querySelectorAll('.ingrow')].map(rw=>[rw.querySelector('[name=ing]').value,Number(rw.querySelector('[name=qty]').value),rw.querySelector('[name=opt]').checked]).filter(x=>x[0]&&x[1]>0);
+  if(!rows.length){toast('Add at least one ingredient.');return;}
+  const id=fd.get('id')||('recipe-'+Date.now());const hasY=fd.get('hasYield')==='on';
+  const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🍽️').trim()||'🍽️',time:Number(fd.get('time'))||30,ings:rows.map(([i,q,o])=>o?[i,q,true]:[i,q]),steps:fd.get('steps').trim(),tags:[],yields:hasY?{id:fd.get('yid'),qty:Number(fd.get('yqty'))||1}:null};
+  if(rec.yields){const s=staple(rec.yields.id);if(s&&!s.made){if(s.custom){s.made=true;}else{it(s.id).madeOverride=true;}}}
+  const i=state.customRecipes.findIndex(x=>x.id===id);if(i>=0)state.customRecipes[i]=rec;else state.customRecipes.push(rec);save();closeDialog();toast(`Saved ${rec.n}`);render();}
+
+/* ============================================================ household sync (Supabase) */
+const SYNCKEY='shelfAndWeeks.sync', SYNC_APP='pantry';
+let sync=loadSync(), pushTimer=null, pullTimer=null;
+function loadSync(){try{return Object.assign({url:'',key:'',code:'',enabled:false,status:'',last:null},JSON.parse(localStorage.getItem(SYNCKEY)||'{}'));}catch(e){return {url:'',key:'',code:'',enabled:false,status:'',last:null};}}
+function saveSync(){try{localStorage.setItem(SYNCKEY,JSON.stringify(sync));}catch(e){}}
+function syncReady(){return !!(sync.enabled&&sync.url&&sync.key&&sync.code);}
+function syncHeaders(){return {apikey:sync.key,Authorization:'Bearer '+sync.key,'Content-Type':'application/json'};}
+function rowId(){return SYNC_APP+':'+sync.code;}
+function setStatus(s,ok){sync.status=s;sync.ok=ok;saveSync();const el=$('#syncStatus');if(el){el.textContent=s;el.className='tiny '+(ok?'muted':'')+(ok?'':' ');el.style.color=ok?'':'var(--alert)';}const p=$('#syncPill');if(p)p.outerHTML=syncPill();}
+function syncPill(){if(!sync.enabled)return '';return `<span class="pill ${sync.ok===false?'bad':''}" id="syncPill" title="${esc(sync.status||'')}">${sync.ok===false?'⚠️ sync':'☁️ shared'}</span>`;}
+function schedulePush(){if(!syncReady())return;clearTimeout(pushTimer);pushTimer=setTimeout(pushState,1500);}
+async function pushState(){if(!syncReady())return;try{
+  const r=await fetch(`${sync.url}/rest/v1/households?on_conflict=id`,{method:'POST',headers:Object.assign(syncHeaders(),{Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({id:rowId(),app:SYNC_APP,doc:state,updated_at:new Date().toISOString()})});
+  if(!r.ok)throw new Error(await errText(r));sync.last=Date.now();setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),true);
+}catch(e){setStatus('Sync failed: '+e.message,false);}}
+async function pullState(manual){if(!syncReady())return;try{
+  const r=await fetch(`${sync.url}/rest/v1/households?id=eq.${encodeURIComponent(rowId())}&select=doc,updated_at`,{headers:syncHeaders()});
+  if(!r.ok)throw new Error(await errText(r));const rows=await r.json();
+  if(!rows.length){await pushState();return;}
+  const remote=rows[0].doc;if(!remote||!remote.items)throw new Error('Unexpected data in the household row');
+  const adopt=!sync.last||!state.rev||(remote.rev&&remote.rev>state.rev); // a device that has never synced takes the household copy
+  if(adopt){const wasSetup=state.setup;state=Object.assign(fresh(),remote);state.items=state.items||{};state.wanted=state.wanted||{};state.customStaples=state.customStaples||[];state.customRecipes=state.customRecipes||[];saveLocalOnly();sync.last=Date.now();setStatus('Updated from household '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),true);render();if(manual||wasSetup)toast('Updated from your household');}
+  else if(remote.rev&&remote.rev<state.rev){await pushState();}
+  else{sync.last=Date.now();setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),true);}
+}catch(e){setStatus('Sync failed: '+e.message,false);if(manual)toast('Sync failed — see Settings');}}
+async function errText(r){try{const j=await r.json();return j.message||j.hint||('HTTP '+r.status);}catch(e){return 'HTTP '+r.status;}}
+function startSyncLoop(){clearInterval(pullTimer);if(!syncReady())return;pullState(false);pullTimer=setInterval(()=>{if(document.visibilityState==='visible')pullState(false);},45000);}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pullState(false);});
+window.addEventListener('focus',()=>pullState(false));
+const SYNC_SQL=`create table if not exists households (
+  id text primary key,
+  app text,
+  doc jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table households enable row level security;
+create policy "household code is the key" on households
+  for all to anon using (true) with check (true);`;
+function genCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';const b=new Uint8Array(20);crypto.getRandomValues(b);b.forEach(x=>s+=a[x%a.length]);return s.replace(/(.{5})(?=.)/g,'$1-');}
+function renderSyncSettings(){return `<p class="tiny muted">Two phones (or a phone and a laptop) can share one pantry through a free Supabase project. Set it up once, then enter the same three values on every device. Whoever saved last wins; the app pulls when you open it and every 45 seconds while it is on screen.</p>
+  <details style="margin:.5em 0"><summary style="cursor:pointer;font-weight:600">One-time setup (about 3 minutes)</summary><ol class="tiny" style="padding-left:1.3em;margin:.4em 0">
+    <li>At <b>supabase.com</b>, open your project (or create a free one).</li>
+    <li>Open the <b>SQL Editor</b>, paste this and run it: <button class="tiny" data-act="copy-sql">Copy SQL</button><pre class="tiny" style="background:var(--panel-2);padding:.6em;border-radius:6px;overflow:auto">${esc(SYNC_SQL)}</pre></li>
+    <li>In <b>Project Settings → API</b> copy the <b>Project URL</b> and the <b>anon public</b> key into the boxes below.</li>
+    <li>Click <b>Generate</b> for a household code, tick <b>Share this pantry</b>, and save.</li>
+    <li>On the other phone, open the same page, go to Settings and enter the same URL, key and code. It will pull this pantry.</li></ol>
+    <p class="tiny muted">The household code is the password: anyone with your anon key and the code can read and change the pantry, so keep the code private. The garden app can share the same table later.</p></details>
+  <div class="grid2"><div><label>Supabase project URL</label><input id="syUrl" value="${esc(sync.url)}" placeholder="https://xxxx.supabase.co"></div><div><label>anon public key</label><input id="syKey" type="password" value="${esc(sync.key)}" placeholder="eyJ…"></div></div>
+  <label>Household code</label><div class="row"><input id="syCode" value="${esc(sync.code)}" placeholder="pick one and use it on every device" style="flex:1;min-width:200px"><button class="small" data-act="sync-gen">Generate</button></div>
+  <label class="check" style="margin-top:.6em"><input type="checkbox" id="syOn" ${sync.enabled?'checked':''}>Share this pantry with my household</label>
+  <div class="row"><button class="primary" data-act="sync-save">Save sync settings</button><button data-act="sync-now" ${syncReady()?'':'disabled'}>Sync now</button><span id="syncStatus" class="tiny" style="color:${sync.ok===false?'var(--alert)':'var(--muted)'}">${esc(sync.status||(sync.enabled?'':'Not shared — this browser only'))}</span></div>`;}
+
+/* ============================================================ wizard */
+function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cooking'];let body='';const sp=state.space,p=state.prefs;
+  if(st===0)body=`<h2>Who are you feeding, and for how long?</h2><p class="help">Kids count as 0.6 of an adult. "Weeks of stock" is how long you want to be able to cook without a grocery run — 2–4 weeks is a well-stocked kitchen, 8–12 is hurricane-season territory.</p>
+    <div class="grid3" style="max-width:520px"><div><label>Adults</label><input type="number" id="wAdults" min="1" max="20" value="${state.adults}"></div><div><label>Kids</label><input type="number" id="wKids" min="0" max="20" value="${state.kids}"></div><div><label>Weeks of stock</label><input type="number" id="wWeeks" min="1" max="26" value="${state.weeks}"></div></div>
+    <label style="max-width:520px">Pantry name</label><input id="wName" value="${esc(state.name)}" style="max-width:520px">
+    <div class="row" style="margin-top:1.5em"><button class="primary" data-act="wiz-next">Continue</button></div>`;
+  if(st===1)body=`<h2>How much room do you have?</h2><p class="help">Measure the shelves you will actually use for food. A typical pantry shelf is 30–36" wide and 12–16" deep with 12" between shelves. Fridge and freezer are in cubic feet (it is printed inside the door); about half the fridge and most of the freezer get counted for staples.</p>
+    <div class="grid3" style="max-width:640px"><div><label>Number of shelves</label><input type="number" id="wShelves" min="0" value="${sp.shelves}"></div><div><label>Shelf width (in)</label><input type="number" id="wW" min="0" value="${sp.w}"></div><div><label>Shelf depth (in)</label><input type="number" id="wD" min="0" value="${sp.d}"></div></div>
+    <div class="grid3" style="max-width:640px"><div><label>Clearance between shelves (in)</label><input type="number" id="wH" min="0" value="${sp.h}"></div><div><label>Fridge (cu ft)</label><input type="number" id="wFridge" min="0" value="${sp.fridge}"></div><div><label>Freezer (cu ft)</label><input type="number" id="wFreezer" min="0" value="${sp.freezer}"></div></div>
+    <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-next">Continue</button></div>`;
+  if(st===2)body=`<h2>How do you cook?</h2><p class="help">This decides which staples go in the plan. You can add or remove any single item later.</p>
+    <label class="check"><input type="checkbox" id="wFridgeOn" ${p.fridge?'checked':''}>Include fridge items <span class="hint">(eggs, butter, cheese, milk)</span></label>
+    <label class="check"><input type="checkbox" id="wFreezerOn" ${p.freezer?'checked':''}>Include freezer items <span class="hint">(meat, frozen vegetables, bread)</span></label>
+    <label class="check"><input type="checkbox" id="wVeg" ${p.veg?'checked':''}>Vegetarian</label>
+    <label class="check"><input type="checkbox" id="wGf" ${p.gf?'checked':''}>Gluten-free</label>
+    <label class="check"><input type="checkbox" id="wBake" ${p.bake?'checked':''}>I bake bread at home</label>
+    <label class="check"><input type="checkbox" id="wWater" ${p.water?'checked':''}>Stock emergency drinking water <span class="hint">(1 gal per person per day)</span></label>
+    <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-finish">Build my stock plan</button></div>`;
+  $('#app').innerHTML=`<div class="wizard"><div class="hero"><div><h1>Shelf &amp; Weeks</h1><p>Tell it how many people, how many weeks and how much shelf space, and it works out the raw staples to keep, fits them to the space, tracks what is on hand, and shows what you can cook tonight.</p></div>
+    <div class="card" style="background:var(--panel)"><b>${STAPLES.length} staples, ${RECIPES.length} recipes</b> — plus your own<p class="tiny muted" style="margin:.3em 0 0">Grains, legumes, cans, oils, baking, spices, long-keeping produce, fridge and freezer basics — every recipe uses only what is on the list.</p></div></div>
+    <div class="steps">${steps.map((s,i)=>`<span class="${i===st?'on':i<st?'done':''}">${i+1}. ${s}</span>`).join('')}</div>${body}</div>`;}
+
+/* ============================================================ actions */
+function setDeep(path,val){const parts=path.split('.');let o=state;for(let i=0;i<parts.length-1;i++)o=o[parts[i]];o[parts[parts.length-1]]=val;}
+function toMake(){return planned().filter(makeAtHome).map(s=>({s,r:recipeFor(s.id),b:batchesNeeded(s)})).filter(x=>x.b>0);}
+function shopText(){const shop=shopping();let cat='',out=`${state.name} — shopping list (${fmt(today())})\n`;shop.sort((a,b)=>CATS.indexOf(a.s.cat)-CATS.indexOf(b.s.cat)).forEach(x=>{if(x.s.cat!==cat){cat=x.s.cat;out+=`\n${cat}\n`;}out+=`  [ ] ${x.s.n} — ${x.n} × ${x.s.pkgName}\n`;});return out+`\nEstimated: ${money(shop.reduce((a,x)=>a+x.cost,0))}`;}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const act=el.dataset.act,id=el.dataset.id;
+  switch(act){
+    case 'tab':ui.tab=el.dataset.tab;ui.q='';render();break;
+    case 'detail':showDetail(id);break;
+    case 'recipe':showRecipe(id);break;
+    case 'dlg-close':closeDialog();break;
+    case 'inc':{const s=staple(id);it(id).on=(it(id).on||0)+s.pkg;save();render();break;}
+    case 'dec':{const s=staple(id);const step=['each','can','cube','bag','box','jar','loaf','head'].includes(s.unit)?1:s.unit==='lb'?0.5:s.unit==='gal'?0.25:1;it(id).on=Math.max(0,(it(id).on||0)-step);save();render();break;}
+    case 'off':{const o=it(id);o.off=!o.off;save();closeDialog();render();toast(o.off?'Removed from plan':'Added to plan');break;}
+    case 'detail-save':{const o=it(id);const s=staple(id);o.on=Math.max(0,Number($('#dOn').value)||0);const per=Number($('#dPer').value);o.per=(isNaN(per)||per===s.per)?null:per;const pr=Number($('#dPrice').value);o.price=(isNaN(pr)||pr===s.price)?null:pr;o.exp=$('#dExp').value||null;save();closeDialog();render();break;}
+    case 'cooked':{const r=recipe(id);const b=Number(el.dataset.b)||1;const c=recipeCheck(r,b);c.rows.forEach(x=>{if(x.s&&x.have)it(x.id).on=Math.max(0,(it(x.id).on||0)-x.need);});
+      if(r.yields&&staple(r.yields.id)){it(r.yields.id).on=(it(r.yields.id).on||0)+r.yields.qty*b;}
+      save();closeDialog();toast(r.yields?`${num(r.yields.qty*b)} ${staple(r.yields.id)?.unit||''} of ${staple(r.yields.id)?.n||r.yields.id} added to stock`:`Enjoy the ${r.n.toLowerCase()} — ingredients subtracted`);render();break;}
+    case 'make-toggle':{const o=it(id);o.make=!o.make;save();render();toast(o.make?'Making it at home — raw ingredients go on the shopping list':'Buying it');break;}
+    case 'batches':break;
+    case 'recipe-new':showRecipeForm(null,el.dataset.out);break;
+    case 'recipe-edit':showRecipeForm(id);break;
+    case 'recipe-save':saveRecipe();break;
+    case 'recipe-del':{if(!confirm('Delete this recipe?'))return;state.customRecipes=state.customRecipes.filter(r=>r.id!==id);save();closeDialog();render();break;}
+    case 'ing-add':addIngRow();break;
+    case 'ing-del':el.closest('.ingrow').remove();break;
+    case 'want':{const r=recipe(id);const c=recipeCheck(r,Number(el.dataset.b)||1);c.missing.forEach(x=>{state.wanted[x.id]=Math.max(state.wanted[x.id]||0,x.need-x.on);});save();closeDialog();ui.tab='shopping';render();toast('Added to shopping list');break;}
+    case 'copy-shop':{const t=shopText();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied')).catch(()=>{openDialog(`<h2>Shopping list</h2><textarea style="min-height:300px">${esc(t)}</textarea><div class="row" style="margin-top:.6em"><button data-act="dlg-close">Close</button></div>`);});break;}
+    case 'bought-all':{shopping().forEach(x=>{it(x.s.id).on=(it(x.s.id).on||0)+x.qty;delete state.wanted[x.s.id];});save();render();toast('Stock updated');break;}
+    case 'custom-new':showCustomForm(null);break;
+    case 'custom-edit':showCustomForm(id);break;
+    case 'custom-save':saveCustom();break;
+    case 'custom-del':{if(!confirm('Delete this staple?'))return;state.customStaples=state.customStaples.filter(c=>c.id!==id);delete state.items[id];save();closeDialog();render();break;}
+    case 'wiz-next':{if(ui.wiz===0){state.adults=Math.max(1,Number($('#wAdults').value)||2);state.kids=Math.max(0,Number($('#wKids').value)||0);state.weeks=Math.max(1,Math.min(26,Number($('#wWeeks').value)||4));state.name=$('#wName').value.trim()||'Home pantry';}
+      if(ui.wiz===1){state.space={shelves:+$('#wShelves').value||0,w:+$('#wW').value||0,d:+$('#wD').value||0,h:+$('#wH').value||12,fridge:+$('#wFridge').value||0,freezer:+$('#wFreezer').value||0};}
+      ui.wiz++;save();renderWizard();break;}
+    case 'wiz-back':ui.wiz=Math.max(0,ui.wiz-1);renderWizard();break;
+    case 'wiz-finish':{state.prefs={fridge:$('#wFridgeOn').checked,freezer:$('#wFreezerOn').checked,veg:$('#wVeg').checked,gf:$('#wGf').checked,bake:$('#wBake').checked,water:$('#wWater').checked};state.setup=true;ui.wiz=0;save();render();break;}
+    case 'rerun':state.setup=false;ui.wiz=0;save();renderWizard();break;
+    case 'sync-gen':$('#syCode').value=genCode();break;
+    case 'copy-sql':(navigator.clipboard?navigator.clipboard.writeText(SYNC_SQL):Promise.reject()).then(()=>toast('SQL copied')).catch(()=>toast('Select the text and copy it'));break;
+    case 'sync-save':{sync.url=$('#syUrl').value.trim().replace(/\/+$/,'');sync.key=$('#syKey').value.trim();sync.code=$('#syCode').value.trim();sync.enabled=$('#syOn').checked;sync.ok=null;sync.status=sync.enabled?'Connecting…':'Not shared — this browser only';saveSync();render();if(syncReady()){pullState(true).then(startSyncLoop);}else{clearInterval(pullTimer);}break;}
+    case 'sync-now':pullState(true);break;
+    case 'export':{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`pantry-backup-${iso(today())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);break;}
+    case 'import':$('#importFile').click();break;
+    case 'reset':if(confirm('Delete the plan, on-hand counts and custom staples?')){state=fresh();save();render();}break;
+  }});
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset.act==='batches'){showRecipe(el.dataset.id,el.value);return;}
+  if(el.name==='hasYield'){$('#yieldBox').style.display=el.checked?'':'none';return;}
+  if(el.dataset.act==='on'){it(el.dataset.id).on=Math.max(0,Number(el.value)||0);save();render();return;}
+  if(el.dataset.act==='bought'){const s=staple(el.dataset.id);if(el.checked){it(s.id).on=(it(s.id).on||0)+Number(el.dataset.n)*s.pkg;delete state.wanted[s.id];save();toast(`${s.n} restocked`);setTimeout(render,250);}return;}
+  if(el.dataset.act==='cat'){ui.cat=el.value;render();return;} if(el.dataset.act==='only'){ui.only=el.value;render();return;}
+  if(el.dataset.set){const k=el.dataset.set;let v=el.type==='checkbox'?el.checked:el.type==='number'||el.type==='range'?Number(el.value):el.value;
+    if(k==='name')v=v.trim()||'Home pantry'; if(k==='adults')v=Math.max(1,v); if(k==='weeks')v=Math.max(1,Math.min(26,v));
+    setDeep(k,v);save();if(el.type==='range'){$('#wkLabel').textContent=v;$('aside.panel').innerHTML=renderSide(alerts());}else render();return;}
+  if(el.id==='importFile'&&el.files[0]){const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(!s||!s.items)throw 0;state=Object.assign(fresh(),s);state.customRecipes=state.customRecipes||[];save();toast('Backup imported');render();}catch(x){toast('That file is not a pantry backup.');}};rd.readAsText(el.files[0]);}
+});
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset.act!=='q')return;ui.q=el.value;const pos=el.selectionStart;$('#content').innerHTML=renderTab();const n=$('#content [data-act="q"]');if(n){n.focus();n.setSelectionRange(pos,pos);}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.act==='on')e.target.blur();});
+dlg().addEventListener('click',e=>{if(e.target===dlg())closeDialog();});
+
+state=load();render();startSyncLoop();
+</script>
+</body>
+</html>
