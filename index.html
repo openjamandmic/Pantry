@@ -146,6 +146,10 @@ dialog .dbody{padding:1.2em; overflow:auto; max-height:88vh}
 .ing{display:grid; grid-template-columns:1fr auto auto; gap:.3em .8em; font-size:.9rem; align-items:center}
 .ing .no{color:var(--alert)}
 .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+.tour-hl{outline:3px solid var(--sun) !important; outline-offset:3px; border-radius:8px}
+#tour{position:fixed; left:0; right:0; bottom:0; z-index:40; padding:1em; padding-bottom:calc(1em + env(safe-area-inset-bottom,0px)); display:flex; justify-content:center; pointer-events:none}
+.tour-card{pointer-events:auto; background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:1em 1.1em; max-width:460px; width:100%}
+.tour-card p{margin:.3em 0 .8em}
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
 </head>
@@ -261,6 +265,9 @@ S('frozen-fruit','Frozen fruit','🫐','Freezer','lb',0.5,1,'16 oz bag',45,8,'fr
 S('bread','Bread (loaf)','🍞','Grains','loaf',0.5,1,'loaf',200,3,'freezer',2,['gluten'],3,'Freeze sliced; toast straight from frozen. Take it out of the plan if you bake your own.'),
 ];
 ['bread','tortillas','crackers','pasta-sauce'].forEach(id=>{STAPLES.find(s=>s.id===id).made=true;});
+const KCAL={"rice": 1650, "pasta": 1600, "oats": 1720, "flour": 1650, "bread-flour": 1650, "cornmeal": 1650, "masa": 1650, "quinoa": 1670, "crackers": 1100, "dry-beans": 1550, "lentils": 1600, "chickpeas": 1650, "split-peas": 1550, "canned-beans": 350, "canned-tomatoes": 100, "tomato-paste": 140, "pasta-sauce": 350, "tuna": 130, "canned-veg": 120, "canned-fruit": 250, "coconut-milk": 750, "bouillon": 10, "broth": 40, "peanut-butter": 165, "honey": 86, "salsa": 150, "jam": 70, "cream-soup": 250, "cereal": 1300, "popcorn": 1700, "mayo": 190, "oil": 240, "olive-oil": 240, "vinegar": 5, "soy-sauce": 15, "hot-sauce": 5, "ketchup": 35, "sugar": 1750, "brown-sugar": 1700, "salt": 0, "baking-powder": 15, "baking-soda": 0, "yeast": 90, "vanilla": 85, "cocoa": 65, "choc-chips": 140, "pepper": 70, "cumin": 105, "chili-powder": 80, "garlic-powder": 95, "oregano": 75, "paprika": 80, "cinnamon": 70, "curry-powder": 90, "pepper-flakes": 90, "bay": 90, "potatoes": 350, "onions": 180, "garlic": 60, "sweet-potatoes": 390, "carrots": 185, "cabbage": 225, "apples": 235, "citrus": 130, "coffee": 0, "tea": 0, "water": 0, "eggs": 72, "butter": 3250, "cheese": 1800, "milk": 2200, "powdered-milk": 120, "yogurt": 600, "tortillas": 140, "chicken": 700, "ground-beef": 1150, "fish": 450, "sausage": 1500, "frozen-veg": 230, "frozen-fruit": 250, "bread": 1500};
+STAPLES.forEach(s=>{s.kcal=KCAL[s.id]??0;});
+
 
 /* ============================================================
    RECIPES — built only from staples above. Quantities serve 4 and
@@ -482,6 +489,11 @@ R('veg-curry','Potato and vegetable curry','🍛',40,[['potatoes',1.5],['coconut
 R('split-pea','Split pea soup','🍲',75,[['split-peas',1],['onions',.5],['carrots',.3,true],['bouillon',6],['garlic',.2],['sausage',.5,true],['bay',.02,true]],
  'Simmer peas, onion, carrot, garlic, bay and 8 cups water with bouillon for an hour, stirring now and then, until the peas collapse. Sausage makes it a meal.',['gf']),
 ];
+
+const RGROUPS={"shelf": ["bread", "tortillas", "crackers", "tomato-sauce"], "breakfast": ["pancakes", "oatmeal", "granola", "baked-oatmeal", "scrambled-toast", "omelets", "breakfast-burritos", "french-toast", "waffles", "muffins", "cinnamon-toast", "yogurt-parfait", "smoothie", "biscuits-gravy", "frittata", "shakshuka", "hash-browns", "biscuits"], "sides": ["mashed-potatoes", "roast-potatoes", "roast-sweet-carrots", "mashed-sweet", "glazed-carrots", "coleslaw", "potato-salad", "pasta-salad", "three-bean-salad", "deviled-eggs", "hummus", "cornbread", "spanish-rice", "applesauce"], "sweets": ["choc-chip-cookies", "oatmeal-cookies", "pb-cookies", "brownies", "apple-crisp", "rice-pudding", "pb-bites", "hot-cocoa", "popcorn"], "light": ["pbj", "tuna-salad", "egg-salad", "chicken-salad", "quesadillas", "grilled", "egg-drop-soup", "quick-noodle-soup", "tomato-soup"]};
+const GROUP_LABEL={shelf:'Make for the shelf',breakfast:'Breakfast',meals:'Dinners & mains',light:'Lunches & light meals',sides:'Sides & salads',sweets:'Sweets & snacks'};
+RECIPES.forEach(r=>{r.g=Object.keys(RGROUPS).find(g=>RGROUPS[g].includes(r.id))||(r.yields?'shelf':'meals');});
+const STARTER=['rice-beans','marinara','tacos','chicken-noodle','sheet-pan-chicken','mac-cheese','chili','stir-fry','lentil-soup','quesadillas','fried-rice','pancakes','oatmeal','scrambled-toast','pbj'];
 </script>
 <script>
 /* ============================================================ helpers */
@@ -506,9 +518,10 @@ let state=null, storageOK=true;
 const ui={tab:'stock',q:'',cat:'',only:'',wiz:0,rtab:'now'};
 function fresh(){return {version:1,setup:false,name:'Home pantry',adults:2,kids:0,weeks:4,
   space:{shelves:5,w:36,d:16,h:12,fridge:12,freezer:6},prefs:{veg:false,gf:false,bake:false,water:false,fridge:true,freezer:true},
-  items:{},customStaples:[],customRecipes:[],wanted:{},settings:{theme:'auto'}};}
-function load(){try{const r=localStorage.getItem(KEY);if(r){const s=Object.assign(fresh(),JSON.parse(r));s.items=s.items||{};s.wanted=s.wanted||{};s.customStaples=s.customStaples||[];s.customRecipes=s.customRecipes||[];return s;}}catch(e){}return fresh();}
-function save(){state.rev=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}schedulePush();}
+  items:{},customStaples:[],customRecipes:[],recipes:{},wanted:{},settings:{theme:'auto',tutorial:true}};}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const s=Object.assign(fresh(),JSON.parse(r));s.items=s.items||{};s.wanted=s.wanted||{};s.customStaples=s.customStaples||[];s.customRecipes=s.customRecipes||[];s.settings=Object.assign({theme:'auto',tutorial:true},s.settings||{});
+  if(!s.recipes){ s.recipes={}; Object.keys(s.items).forEach(id=>{}); s._legacy=true; } return s;}}catch(e){}return fresh();}
+function save(){_demand=null;state.rev=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}schedulePush();}
 function saveLocalOnly(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}}
 
 /* ============================================================ plan maths */
@@ -520,8 +533,16 @@ function inPrefs(s){const p=state.prefs;
   if(p.veg&&s.tags.includes('meat'))return false; if(p.gf&&s.tags.includes('gluten'))return false;
   if(!p.bake&&s.tags.includes('bake'))return false; if(!p.water&&s.tags.includes('water'))return false;
   if(!p.fridge&&s.store==='fridge')return false; if(!p.freezer&&s.store==='freezer')return false; return true;}
-function planned(){return allStaples().filter(s=>inPrefs(s)&&!it(s.id).off);}
-function rate(s){const o=state.items[s.id];const per=o&&o.per!=null?o.per:s.per;return per*people();}
+function planned(){return allStaples().filter(s=>inPrefs(s)&&!it(s.id).off&&rate(s)>0);}
+function freq(id){return Number(state.recipes[id])||0;}
+function inRotation(r){return freq(r.id)>0||(r.yields&&state.recipes[r.id]==='make');}
+let _demand=null,_demandKey='';
+function recipeDemand(){const key=JSON.stringify([state.recipes,state.adults,state.kids,state.customRecipes.length]);if(_demand&&_demandKey===key)return _demand;const dm={};const sc=scale();
+  allRecipes().forEach(r=>{const f=freq(r.id);if(!f||r.yields)return;r.ings.forEach(([id,q,opt])=>{if(opt)return;dm[id]=(dm[id]||0)+q*sc*f;});});_demand=dm;_demandKey=key;return dm;}
+function isBasic(s){const o=state.items[s.id];if(o&&o.basic!=null)return !!o.basic;return !!state._legacy;}
+function rate(s){const o=state.items[s.id];const per=o&&o.per!=null?o.per:s.per;const basic=isBasic(s)?per*people():0;return (recipeDemand()[s.id]||0)+basic;}
+function planKcalPerAdultDay(){const tot=planned().reduce((a,s)=>a+rate(s)*(s.kcal||0),0);return people()>0?tot/people()/7:0;}
+function recipeKcal(r){const sc=r.yields?1:scale();const tot=r.ings.reduce((a,[id,q,opt])=>{const s=staple(id);return a+(s?q*sc*(s.kcal||0):0);},0);return r.yields?tot:tot/(sc*4);}
 function target(s){return rate(s)*state.weeks;}
 function pkgs(s,qty){return Math.max(0,Math.ceil((qty-1e-9)/s.pkg));}
 function targetRounded(s){return pkgs(s,target(s))*s.pkg;}
@@ -569,19 +590,20 @@ function renderTab(){switch(ui.tab){case 'shopping':return renderShopping();case
 function gauge(store){const u=usage(store),c=capacity(store);if(c<=0)return '';const p=Math.min(1,u/c);const cls=u>c?'bad':p>0.85?'warn':'';const fw=fitWeeks(store);
   return `<div style="margin:.5em 0"><div class="row between tiny"><b>${STORES[store].e} ${STORES[store].label}</b><span class="muted">${Math.round(u/c*100)}% · fits ~${fw===Infinity?'∞':fw} wk</span></div><div class="gauge"><i class="${cls}" style="width:${p*100}%"></i></div></div>`;}
 function renderSide(al){const shop=shopping();const cost=shop.reduce((a,x)=>a+x.cost,0);const can=RECIPES.filter(r=>recipeCheck(r).can).length;
-  let h=`<div class="stack"><div class="card accent"><b>${state.weeks}-week plan for ${state.adults} adult${state.adults===1?'':'s'}${state.kids?` + ${state.kids} kid${state.kids===1?'':'s'}`:''}</b><div class="muted tiny" style="margin-top:.2em">${planned().length} staples in the plan · ${can} recipes you can cook right now</div></div>
+  let h=`<div class="stack"><div class="card accent"><b>${state.weeks}-week plan for ${state.adults} adult${state.adults===1?'':'s'}${state.kids?` + ${state.kids} kid${state.kids===1?'':'s'}`:''}</b><div class="muted tiny" style="margin-top:.2em">${Object.values(state.recipes).filter(v=>v>0).length} recipes in rotation · ${planned().length} staples · ${can} cookable right now</div>
+  <div style="margin-top:.5em;font-size:.9rem">≈ <b>${Math.round(planKcalPerAdultDay()).toLocaleString()}</b> kcal per adult per day from this plan <span class="muted tiny">(2,000–2,600 feeds most adults; it only counts meals in your rotation and basics — if it is low, add breakfasts, lunches or snacks)</span></div></div>
   <div><h3>Space</h3>${gauge('dry')}${gauge('fridge')}${gauge('freezer')}<p class="tiny muted">Volumes are estimates from typical package sizes; 25% of shelf space is reserved for air and awkward shapes.</p></div>`;
   if(shop.length)h+=`<div class="card"><b>To buy:</b> ${shop.length} item${shop.length===1?'':'s'}, roughly ${money(cost)} <button class="small" data-act="tab" data-tab="shopping" style="margin-left:.4em">Open</button></div>`;
   const top=al.filter(a=>a.type!=='exp').slice(0,6); if(!anyStock())h+=`<div class="card"><b>Next step:</b> go through the Stock tab and enter what you already have. Everything else — alerts, the shopping list, recipes — follows from that.</div>`; if(top.length)h+=`<div><h3>Needs attention</h3><ul class="alerts">${top.map(a=>`<li data-act="${a.id?'detail':'tab'}" data-id="${a.id||''}" data-tab="alerts"><span class="dot ${a.type}"></span><span>${esc(a.text)}</span></li>`).join('')}</ul></div>`;
   h+=`<div class="row"><button class="small" data-act="custom-new">+ Add a staple</button><button class="small" data-act="tab" data-tab="settings">Edit plan</button></div></div>`;return h;}
 function renderStock(){
-  let list=allStaples().filter(inPrefs); const q=ui.q.toLowerCase();
+  let list=allStaples().filter(s=>inPrefs(s)&&(ui.only==='all'||rate(s)>0||it(s.id).on>0)); const q=ui.q.toLowerCase();
   if(ui.cat)list=list.filter(s=>s.cat===ui.cat); if(q)list=list.filter(s=>(s.n+' '+s.cat).toLowerCase().includes(q));
   if(ui.only==='attn')list=list.filter(s=>!it(s.id).off&&(status(s).st!=='stocked'||status(s).exp)); if(ui.only==='tier1')list=list.filter(s=>s.tier===1);
   let h=`<div class="row" style="margin-bottom:.5em"><input placeholder="Search staples" value="${esc(ui.q)}" data-act="q" style="flex:1;min-width:140px">
     <select data-act="cat" style="width:auto"><option value="">All categories</option>${CATS.map(c=>`<option ${ui.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
-    <select data-act="only" style="width:auto"><option value="">Everything</option><option value="attn" ${ui.only==='attn'?'selected':''}>Needs attention</option><option value="tier1" ${ui.only==='tier1'?'selected':''}>Essentials only</option></select></div>
-    <p class="tiny muted">Target = what ${state.weeks} weeks takes, rounded up to whole packages. Type what you actually have on hand; use +pkg when you unpack groceries. Click a name for details, expiry date and per-week adjustments. Items marked <span class="chip info" style="font-size:.7rem">made from raw</span> can be switched between buying and making — when you make them, the raw ingredients they need are added to the shopping list instead.</p>`;
+    <select data-act="only" style="width:auto"><option value="">Everything</option><option value="attn" ${ui.only==='attn'?'selected':''}>Needs attention</option><option value="tier1" ${ui.only==='tier1'?'selected':''}>Essentials only</option><option value="all" ${ui.only==='all'?'selected':''}>Show every staple</option></select></div>
+    <p class="tiny muted">Target = what ${state.weeks} weeks takes, rounded up to whole packages. Type what you actually have on hand; use +pkg when you unpack groceries. Click a name for details, expiry date and per-week adjustments. Only ingredients your recipes call for (plus anything marked "always keep stocked") appear here; choose "Show every staple" to add more. Items marked <span class="chip info" style="font-size:.7rem">made from raw</span> can be switched between buying and making — when you make them, the raw ingredients they need are added to the shopping list instead.</p>`;
   const over=['dry','fridge','freezer'].filter(st=>capacity(st)>0&&usage(st)>capacity(st));
   if(over.length){const st=over[0];const cand=planned().filter(s=>s.store===st&&s.tier===3).sort((a,b)=>b.vol*targetRounded(b)-a.vol*targetRounded(a)).slice(0,5);
     h+=`<div class="card" style="background:var(--alert-soft);margin-bottom:.6em"><b>${STORES[st].label} is over capacity.</b> Options: drop to ${fitWeeks(st)} weeks in Settings, add shelf space, or take these nice-to-haves out of the plan: ${cand.map(s=>`<button class="tiny" data-act="off" data-id="${s.id}">${esc(s.n)} ✕</button>`).join(' ')||'(no extras left to cut)'}</div>`;}
@@ -590,7 +612,7 @@ function renderStock(){
     const o=it(s.id),st=status(s);const off=o.off;
     h+=`<div class="item ${off?'off':''}" data-id="${s.id}"><div class="em">${s.e}</div>
       <div class="nm" style="cursor:pointer" data-act="detail" data-id="${s.id}">${esc(s.n)}${s.custom?' <span class="chip">custom</span>':''}<small>${s.pkgName} · ${TIER[s.tier]}${s.made?` · <span class="chip info" style="font-size:.7rem">made from raw</span>`:''}${st.exp?` · <span style="color:${st.exp.cls==='bad'?'var(--alert)':'inherit'}">${st.exp.label}</span>`:''}</small></div>
-      <div class="tgt">${off?'<span class="muted">not in plan</span>':`${num(targetRounded(s))} ${s.unit}<small>${pkgs(s,target(s))} × ${s.pkgName} · ${num(rate(s),2)}/wk</small>`}</div>
+      <div class="tgt">${off?'<span class="muted">not in plan</span>':rate(s)>0?`${num(targetRounded(s))} ${s.unit}<small>${pkgs(s,target(s))} × ${s.pkgName} · ${num(rate(s),2)}/wk</small>`:`<span class="muted">no recipe uses it</span><small><button class="tiny" data-act="basic-on" data-id="${s.id}">Always keep stocked</button></small>`}</div>
       <div class="qty"><button class="tiny" data-act="dec" data-id="${s.id}" aria-label="Use one">−</button><input type="number" min="0" step="any" value="${num(o.on||0,2)}" data-act="on" data-id="${s.id}" aria-label="On hand"><span>${s.unit}</span><button class="tiny" data-act="inc" data-id="${s.id}" title="Add one package (${s.pkgName})" style="white-space:nowrap">+pkg</button></div>
       <div class="st">${off?`<button class="tiny" data-act="off" data-id="${s.id}">Add to plan</button>`:`<span class="chip ${st.cls}">${st.label}</span>${s.made?`<span class="row" style="gap:.2em">${recipeFor(s.id)?`<button class="tiny" data-act="make-toggle" data-id="${s.id}" title="Make it at home, or buy it?">${it(s.id).make?'🏠 making':'🛒 buying'}</button><button class="tiny" data-act="recipe" data-id="${recipeFor(s.id).id}">Make</button>`:`<button class="tiny" data-act="recipe-new" data-out="${s.id}" title="Add a recipe that makes this">+ recipe</button>`}</span>`:''}<div class="bar"><i class="${st.cls==='bad'?'bad':st.cls==='ok'?'warn':''}" style="width:${Math.min(100,st.ratio*100)}%"></i></div><span class="tiny muted">${st.days===Infinity?'':Math.round(st.days)+' days'}</span>`}</div></div>`;});
   if(!list.length)h+=`<p class="muted">Nothing matches.</p>`;
@@ -608,8 +630,8 @@ function renderShopping(){const shop=shopping();const cost=shop.reduce((a,x)=>a+
 function renderRecipes(){const sc=scale();const checked=allRecipes().map(r=>({r,c:recipeCheck(r)})).filter(x=>x.c.fits&&!x.r.yields);
   const makers=allRecipes().filter(r=>r.yields).map(r=>{const s=staple(r.yields.id);return {r,s,c:recipeCheck(r,1),b:s?batchesNeeded(s):0};});
   const now=checked.filter(x=>x.c.can),near=checked.filter(x=>!x.c.can&&x.c.missing.length<=2),rest=checked.filter(x=>x.c.missing.length>2);
-  const item=x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}</div><div class="meta">${x.r.time} min · ${x.r.ings.filter(i=>!i[2]).length} ingredients${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}${x.c.missing.length>3?` +${x.c.missing.length-3}`:''}`:''}</div></div></div>`;
-  let h=`<div class="row between"><h2>Recipes from the pantry</h2><button class="small primary" data-act="recipe-new">+ Add a recipe</button></div><p class="tiny muted">Meals are scaled to your household (${num(sc*4,1)} servings). Marking one as cooked subtracts its ingredients from what you have on hand.</p>`;
+  const item=x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div style="flex:1"><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}${freq(x.r.id)?` <span class="chip good">${num(freq(x.r.id))}×/wk</span>`:''}</div><div class="meta">${x.r.time} min · ~${Math.round(recipeKcal(x.r))} kcal/serving · ${x.r.ings.filter(i=>!i[2]).length} ingredients${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}${x.c.missing.length>3?` +${x.c.missing.length-3}`:''}`:''}</div></div></div>`;
+  let h=`<div class="row between"><h2>Recipes from the pantry</h2><button class="small primary" data-act="recipe-new">+ Add a recipe</button></div><p class="tiny muted">Meals are scaled to your household (${num(sc*4,1)} servings). Recipes in your rotation (green ×/wk tag) decide which raw ingredients the plan stocks; open a recipe to change how often you cook it. Marking one as cooked subtracts its ingredients from what you have on hand.</p>`;
   if(makers.length)h+=`<h3 style="margin-top:.8em">Make for the shelf</h3><p class="tiny muted">Recipes that turn raw ingredients into a stocked item. Making one subtracts the ingredients and adds the result to stock.</p>${makers.map(x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}</div><div class="meta">${x.r.time} min · makes ${num(x.r.yields.qty)} ${x.s?x.s.unit+' of '+esc(x.s.n):esc(x.r.yields.id)}${x.b?` · <b>${x.b} batch${x.b===1?'':'es'} needed</b>`:''}${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}`:' · <span class="chip good" style="font-size:.7rem">ready</span>'}</div></div></div>`).join('')}`;
   h+=`<h3 style="margin-top:1em">Cook tonight <span class="muted" style="font-weight:400">(${now.length})</span></h3>${now.map(item).join('')||'<p class="muted tiny">Nothing yet — stock a few essentials first.</p>'}`;
   if(near.length)h+=`<h3 style="margin-top:1em">One or two items short <span class="muted" style="font-weight:400">(${near.length})</span></h3>${near.map(item).join('')}`;
@@ -632,12 +654,13 @@ function renderSettings(){const sp=state.space,p=state.prefs;
   <label class="check"><input type="checkbox" ${p.gf?'checked':''} data-set="prefs.gf">Gluten-free <span class="hint">(no wheat flour, pasta, bread)</span></label>
   <label class="check"><input type="checkbox" ${p.bake?'checked':''} data-set="prefs.bake">I bake bread at home <span class="hint">(adds bread flour, yeast, brown sugar, baking extras)</span></label>
   <label class="check"><input type="checkbox" ${p.water?'checked':''} data-set="prefs.water">Stock emergency drinking water <span class="hint">(1 gal per person per day — big)</span></label>
+  <h3>Tutorial</h3><label class="check"><input type="checkbox" ${state.settings.tutorial!==false?'checked':''} data-set="settings.tutorial">Show the tutorial after setup</label><button class="small" data-act="tour-start">Replay the tutorial now</button>
   <label>Theme</label><select data-set="settings.theme"><option value="auto" ${state.settings.theme==='auto'?'selected':''}>Match device</option><option value="light" ${state.settings.theme==='light'?'selected':''}>Light</option><option value="dark" ${state.settings.theme==='dark'?'selected':''}>Dark</option></select>
   <hr><h3>Your staples and recipes</h3><p class="tiny muted">${state.customStaples.length} custom staple${state.customStaples.length===1?'':'s'}, ${state.customRecipes.length} custom recipe${state.customRecipes.length===1?'':'s'}.</p><div class="row"><button data-act="custom-new">+ Add a staple</button><button data-act="recipe-new">+ Add a recipe</button></div>
   <hr><h3>Share with your household</h3>${renderSyncSettings()}
   <hr><h3>Your data</h3><p class="tiny muted">Everything lives in this browser${syncReady()?' and in your shared household table':''}. Export a backup to keep it or move it to another device.</p>
   <div class="row"><button data-act="export">Export backup (.json)</button><button data-act="import">Import backup</button><input type="file" id="importFile" accept="application/json" class="sr"></div>
-  <hr><div class="row"><button data-act="rerun">Re-run setup wizard</button><button class="danger" data-act="reset">Start over (deletes everything)</button></div>
+  <hr><div class="row"><button data-act="choose-recipes">Choose my recipes</button><button data-act="rerun">Re-run setup wizard</button><button class="danger" data-act="reset">Start over (deletes everything)</button></div>
   <p class="tiny muted" style="margin-top:1.5em">Weekly amounts are typical for a household cooking mostly from scratch; adjust any item's per-week rate from its detail view and the whole plan follows.</p></div>`;}
 
 /* ============================================================ dialogs */
@@ -645,15 +668,17 @@ const dlg=()=>$('#dlg');function openDialog(h){$('#dlgBody').innerHTML=h;if(!dlg
 function showDetail(id){const s=staple(id);if(!s)return;const o=it(id),st=status(s);const uses=RECIPES.filter(r=>r.ings.some(i=>i[0]===id));
   openDialog(`<div class="row between"><h2>${s.e} ${esc(s.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
   <div class="row" style="gap:.3em;margin:.4em 0"><span class="chip ${st.cls}">${st.label}</span><span class="chip">${esc(s.cat)}</span><span class="chip">${TIER[s.tier]}</span><span class="chip">${STORES[s.store].e} ${STORES[s.store].label}</span>${st.exp?`<span class="chip ${st.exp.cls}">${st.exp.label}</span>`:''}</div>
-  <div class="kv"><b>Target</b><span>${num(targetRounded(s))} ${s.unit} = ${pkgs(s,target(s))} × ${s.pkgName} for ${state.weeks} weeks</span><b>On hand</b><span>${num(st.on,2)} ${s.unit}${st.days!==Infinity?` — about ${Math.round(st.days)} days`:''}</span><b>Shelf life</b><span>${s.life>=999?'Indefinite':s.life<1?Math.round(s.life*30)+' days':s.life+' months'} unopened</span><b>Space</b><span>${Math.round(targetRounded(s)*s.vol)} cu in at target</span></div>
+  <div class="kv"><b>Target</b><span>${num(targetRounded(s))} ${s.unit} = ${pkgs(s,target(s))} × ${s.pkgName} for ${state.weeks} weeks</span><b>On hand</b><span>${num(st.on,2)} ${s.unit}${st.days!==Infinity?` — about ${Math.round(st.days)} days`:''}</span><b>Shelf life</b><span>${s.life>=999?'Indefinite':s.life<1?Math.round(s.life*30)+' days':s.life+' months'} unopened</span><b>Space</b><span>${Math.round(targetRounded(s)*s.vol)} cu in at target</span><b>Calories</b><span>${s.kcal?`${num(s.kcal)} per ${s.unit}`:'not set'}</span><b>Why it's here</b><span>${recipeDemand()[s.id]?`${num(recipeDemand()[s.id],2)} ${s.unit}/wk from your recipes`:''}${recipeDemand()[s.id]&&isBasic(s)?' + ':''}${isBasic(s)?`${num((state.items[s.id]?.per??s.per)*people(),2)} ${s.unit}/wk as a basic`:''}${!recipeDemand()[s.id]&&!isBasic(s)?'nothing yet — tick "always keep stocked" or add a recipe that uses it':''}</span></div>
   ${s.note?`<p style="margin-top:.6em">${esc(s.note)}</p>`:''}
   <div class="grid3" style="margin-top:.6em"><div><label>On hand (${s.unit})</label><input type="number" min="0" step="any" id="dOn" value="${num(st.on,2)}"></div><div><label>Per adult per week</label><input type="number" min="0" step="any" id="dPer" value="${num(o.per!=null?o.per:s.per,2)}"></div><div><label>Price per ${esc(s.pkgName)}</label><input type="number" min="0" step="any" id="dPrice" value="${num(price(s),2)}"></div></div>
   <label>Expiry / best-by of the oldest package <span class="hint">(optional)</span></label><input type="date" id="dExp" value="${o.exp||''}">
+  <label class="check" style="margin-top:.6em"><input type="checkbox" id="dBasic" ${isBasic(s)?'checked':''}>Always keep stocked at the per-adult rate <span class="hint">(coffee, salt, snacks — things no recipe covers)</span></label>
   ${uses.length?`<p class="tiny muted" style="margin-top:.6em">Used in: ${uses.map(r=>r.n).join(', ')}</p>`:''}
   <div class="row" style="margin-top:1em"><button class="primary" data-act="detail-save" data-id="${id}">Save</button><button data-act="off" data-id="${id}">${o.off?'Add to plan':'Remove from plan'}</button>${s.custom?`<button data-act="custom-edit" data-id="${id}">Edit staple</button><button class="danger" data-act="custom-del" data-id="${id}">Delete</button>`:''}<button class="ghost" data-act="dlg-close">Cancel</button></div>`);}
 function showRecipe(id,batches){const r=recipe(id);if(!r)return;batches=Math.max(1,Number(batches)||1);const c=recipeCheck(r,batches);const sc=scale();const ys=r.yields?staple(r.yields.id):null;
   openDialog(`<div class="row between"><h2>${r.e} ${esc(r.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
-  <p class="tiny muted">${r.time} min · ${r.yields?`makes ${num(r.yields.qty*batches)} ${ys?ys.unit+' of '+esc(ys.n):esc(r.yields.id)}`:`${num(sc*4,1)} servings`} · ${c.can?'<span class="chip good">You have everything</span>':`<span class="chip bad">Missing ${c.missing.length}</span>`}</p>
+  <p class="tiny muted">${r.time} min · ${r.yields?`makes ${num(r.yields.qty*batches)} ${ys?ys.unit+' of '+esc(ys.n):esc(r.yields.id)}`:`${num(sc*4,1)} servings`} · ~${Math.round(recipeKcal(r)).toLocaleString()} kcal${r.yields?' per batch':' per serving'} · ${c.can?'<span class="chip good">You have everything</span>':`<span class="chip bad">Missing ${c.missing.length}</span>`}</p>
+  ${r.yields?'':`<div class="row" style="margin:.4em 0"><label style="margin:0">In my rotation</label><input type="number" min="0" step="0.5" value="${num(freq(id))}" data-act="freq" data-id="${id}" style="width:80px"><span class="tiny muted">times per week — this is what puts its ingredients on the shopping list</span></div>`}
   ${r.yields?`<div class="row" style="margin:.4em 0"><label style="margin:0">Batches</label><input type="number" min="1" value="${batches}" id="rBatches" data-act="batches" data-id="${id}" style="width:80px">${ys&&batchesNeeded(ys)?`<span class="tiny muted">${batchesNeeded(ys)} needed to reach target</span>`:''}</div>`:''}
   <div class="ing">${c.rows.map(x=>`<span class="${x.have||x.opt?'':'no'}">${x.s?x.s.e+' '+esc(x.s.n):esc(x.id)}${x.opt?' <span class="muted tiny">(optional)</span>':''}</span><span>${num(x.need,2)} ${x.s?x.s.unit:''}</span><span class="tiny ${x.have?'muted':'no'}">${x.have?'✓':x.opt?'—':'have '+num(x.on,2)}</span>`).join('')}</div>
   <h3 style="margin-top:.8em">Method</h3><p>${esc(r.steps)}</p>
@@ -665,18 +690,23 @@ function showCustomForm(id){const s=id?staple(id):null;
   <div class="grid2"><div><label>Category</label><select name="cat">${CATS.map(c=>`<option ${s?.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div><label>Stored in</label><select name="store"><option value="dry" ${s?.store==='dry'?'selected':''}>Dry shelves</option><option value="fridge" ${s?.store==='fridge'?'selected':''}>Fridge</option><option value="freezer" ${s?.store==='freezer'?'selected':''}>Freezer</option></select></div></div>
   <div class="grid3"><div><label>Unit</label><input name="unit" required value="${esc(s?.unit||'lb')}" placeholder="lb, oz, can, each"></div><div><label>Per adult per week</label><input name="per" type="number" min="0" step="any" required value="${s?s.per:''}"></div><div><label>Priority</label><select name="tier"><option value="1" ${s?.tier===1?'selected':''}>Essential</option><option value="2" ${!s||s.tier===2?'selected':''}>Standard</option><option value="3" ${s?.tier===3?'selected':''}>Nice to have</option></select></div></div>
   <div class="grid3"><div><label>Package size <span class="hint">(in units)</span></label><input name="pkg" type="number" min="0.01" step="any" required value="${s?s.pkg:''}"></div><div><label>Package name</label><input name="pkgName" required value="${esc(s?.pkgName||'')}" placeholder="2 lb bag"></div><div><label>Price per package ($)</label><input name="price" type="number" min="0" step="any" value="${s?s.price:''}"></div></div>
-  <div class="grid2"><div><label>Space per unit <span class="hint">(cubic inches)</span></label><input name="vol" type="number" min="0" step="any" required value="${s?s.vol:''}" placeholder="a 15 oz can ≈ 32"></div><div><label>Shelf life (months)</label><input name="life" type="number" min="0" step="any" required value="${s?s.life:''}"></div></div>
+  <div class="grid3"><div><label>Space per unit <span class="hint">(cu in)</span></label><input name="vol" type="number" min="0" step="any" required value="${s?s.vol:''}" placeholder="a 15 oz can ≈ 32"></div><div><label>Shelf life (months)</label><input name="life" type="number" min="0" step="any" required value="${s?s.life:''}"></div><div><label>Calories per unit</label><input name="kcal" type="number" min="0" step="any" value="${s?.kcal??''}" placeholder="e.g. 1650 per lb"></div></div>
+  <label class="check"><input type="checkbox" name="basic" ${s?isBasic(s):'checked'}>Always keep this stocked <span class="hint">(at the per-adult rate above, even if no recipe uses it)</span></label>
   <label class="check"><input type="checkbox" name="made" ${s?.made?'checked':''}>Made from raw ingredients <span class="hint">— not a raw ingredient itself (bread, crackers, tortillas, sauce). You can then add a recipe that produces it and choose to make it instead of buying it.</span></label>
   <label>Notes</label><textarea name="note">${esc(s?.note||'')}</textarea>
   <div class="row"><button class="primary" data-act="custom-save">Save</button><button class="ghost" data-act="dlg-close">Cancel</button></div></form>`);}
 function saveCustom(){const f=$('#cf');if(!f.reportValidity())return;const fd=new FormData(f);const id=fd.get('id')||('custom-'+Date.now());
-  const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🥫').trim()||'🥫',cat:fd.get('cat'),unit:fd.get('unit').trim(),per:Number(fd.get('per')),pkg:Number(fd.get('pkg')),pkgName:fd.get('pkgName').trim(),vol:Number(fd.get('vol')),life:Number(fd.get('life')),store:fd.get('store'),tier:Number(fd.get('tier')),tags:[],price:Number(fd.get('price'))||0,note:fd.get('note').trim(),made:fd.get('made')==='on'};
-  const i=state.customStaples.findIndex(c=>c.id===id);if(i>=0)state.customStaples[i]=rec;else state.customStaples.push(rec);save();closeDialog();toast(`Saved ${rec.n}`);render();}
+  const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🥫').trim()||'🥫',cat:fd.get('cat'),unit:fd.get('unit').trim(),per:Number(fd.get('per')),pkg:Number(fd.get('pkg')),pkgName:fd.get('pkgName').trim(),vol:Number(fd.get('vol')),life:Number(fd.get('life')),store:fd.get('store'),tier:Number(fd.get('tier')),tags:[],price:Number(fd.get('price'))||0,note:fd.get('note').trim(),made:fd.get('made')==='on',kcal:Number(fd.get('kcal'))||0};
+  it(id).basic=fd.get('basic')==='on';
+  const i=state.customStaples.findIndex(c=>c.id===id);if(i>=0)state.customStaples[i]=rec;else state.customStaples.push(rec);save();closeDialog();toast(`Saved ${rec.n}`);render();
+  if(ui.recipeDraft){const dr=ui.recipeDraft;ui.recipeDraft=null;showRecipeFormFromDraft(dr,rec.id);}}
 
-function stapleOptions(sel){return allStaples().slice().sort((a,b)=>a.n.localeCompare(b.n)).map(s=>`<option value="${s.id}" ${sel===s.id?'selected':''}>${esc(s.n)} (${s.unit})</option>`).join('');}
-function ingRowHTML(id,q,opt){return `<div class="ingrow row" style="flex-wrap:nowrap;margin:.3em 0"><select name="ing" style="flex:2;min-width:0">${stapleOptions(id)}</select><input name="qty" type="number" min="0" step="any" value="${q!=null?q:''}" placeholder="qty" style="width:80px" required><label class="check tiny" style="margin:0"><input type="checkbox" name="opt" ${opt?'checked':''}>opt.</label><button class="tiny ghost" data-act="ing-del" aria-label="Remove">✕</button></div>`;}
+function stapleOptions(sel){return `<option value="" ${sel?'':'selected'}>— choose —</option>`+allStaples().slice().sort((a,b)=>a.n.localeCompare(b.n)).map(s=>`<option value="${s.id}" ${sel===s.id?'selected':''}>${esc(s.n)} (${s.unit})</option>`).join('')+`<option value="__new">+ New ingredient…</option>`;}
+function ingRowHTML(id,q,opt){return `<div class="ingrow row" style="flex-wrap:nowrap;margin:.3em 0"><select name="ing" style="flex:2;min-width:0">${stapleOptions(id)}</select><input name="qty" type="number" min="0" step="any" value="${q!=null?q:''}" placeholder="qty" style="width:80px"><label class="check tiny" style="margin:0"><input type="checkbox" name="opt" ${opt?'checked':''}>opt.</label><button class="tiny ghost" data-act="ing-del" aria-label="Remove">✕</button></div>`;}
 function addIngRow(){$('#ings').insertAdjacentHTML('beforeend',ingRowHTML(null,null,false));}
-function showRecipeForm(id,outId){const r=id?recipe(id):null;const y=r?.yields||(outId?{id:outId,qty:1}:null);
+function recipeDraft(){const f=$('#rf');if(!f)return null;const fd=new FormData(f);return {id:fd.get('id'),n:fd.get('n'),e:fd.get('e'),time:fd.get('time'),steps:fd.get('steps'),hasYield:fd.get('hasYield')==='on',yid:fd.get('yid'),yqty:fd.get('yqty'),rows:[...f.querySelectorAll('.ingrow')].map(rw=>[rw.querySelector('[name=ing]').value,rw.querySelector('[name=qty]').value,rw.querySelector('[name=opt]').checked])};}
+function showRecipeFormFromDraft(dr,newId){const r={id:dr.id,n:dr.n,e:dr.e,time:dr.time,steps:dr.steps,ings:dr.rows.map(([i,q,o])=>[i==='__new'?(newId||''):i,q===''?null:Number(q),o]),yields:dr.hasYield?{id:dr.yid,qty:Number(dr.yqty)||1}:null};showRecipeForm(null,null,r);}
+function showRecipeForm(id,outId,draft){const r=draft||(id?recipe(id):null);const y=r?.yields||(outId?{id:outId,qty:1}:null);
   openDialog(`<div class="row between"><h2>${r?'Edit recipe':'Add a recipe'}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
   <form id="rf" class="stack" onsubmit="return false"><input type="hidden" name="id" value="${r?r.id:''}">
   <div class="grid3"><div style="grid-column:1/3"><label>Name</label><input name="n" required value="${esc(r?.n||'')}"></div><div><label>Emoji</label><input name="e" value="${esc(r?.e||'🍽️')}" maxlength="4"></div></div>
@@ -689,13 +719,30 @@ function showRecipeForm(id,outId){const r=id?recipe(id):null;const y=r?.yields||
   <label>Method</label><textarea name="steps" required>${esc(r?.steps||'')}</textarea>
   <div class="row"><button class="primary" data-act="recipe-save">Save recipe</button><button class="ghost" data-act="dlg-close">Cancel</button></div></form>`);}
 function saveRecipe(){const f=$('#rf');if(!f.reportValidity())return;const fd=new FormData(f);
-  const rows=[...f.querySelectorAll('.ingrow')].map(rw=>[rw.querySelector('[name=ing]').value,Number(rw.querySelector('[name=qty]').value),rw.querySelector('[name=opt]').checked]).filter(x=>x[0]&&x[1]>0);
-  if(!rows.length){toast('Add at least one ingredient.');return;}
+  const rows=[...f.querySelectorAll('.ingrow')].map(rw=>[rw.querySelector('[name=ing]').value,Number(rw.querySelector('[name=qty]').value),rw.querySelector('[name=opt]').checked]).filter(x=>x[0]&&x[0]!=='__new'&&x[1]>0);
+  if(!rows.length){toast('Add at least one ingredient with a quantity.');return;}
+  if([...f.querySelectorAll('.ingrow')].some(rw=>rw.querySelector('[name=ing]').value&&rw.querySelector('[name=ing]').value!=='__new'&&!(Number(rw.querySelector('[name=qty]').value)>0))){toast('Every chosen ingredient needs a quantity.');return;}
   const id=fd.get('id')||('recipe-'+Date.now());const hasY=fd.get('hasYield')==='on';
   const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🍽️').trim()||'🍽️',time:Number(fd.get('time'))||30,ings:rows.map(([i,q,o])=>o?[i,q,true]:[i,q]),steps:fd.get('steps').trim(),tags:[],yields:hasY?{id:fd.get('yid'),qty:Number(fd.get('yqty'))||1}:null};
   if(rec.yields){const s=staple(rec.yields.id);if(s&&!s.made){if(s.custom){s.made=true;}else{it(s.id).madeOverride=true;}}}
-  const i=state.customRecipes.findIndex(x=>x.id===id);if(i>=0)state.customRecipes[i]=rec;else state.customRecipes.push(rec);save();closeDialog();toast(`Saved ${rec.n}`);render();}
+  const i=state.customRecipes.findIndex(x=>x.id===id);if(i>=0)state.customRecipes[i]=rec;else{state.customRecipes.push(rec);if(!rec.yields)state.recipes[id]=1;}save();closeDialog();toast(rec.yields?`Saved ${rec.n}`:`Saved ${rec.n} — its ingredients are now on the shopping list`);render();}
 
+/* ============================================================ tutorial */
+const TOUR=[
+ {sel:null,t:'Welcome to Shelf & Weeks',b:'A 60-second tour. You can replay it any time from Settings, or turn it off there.'},
+ {sel:'[data-tab="stock"]',t:'Stock',b:'Every raw ingredient your recipes need, with a target for your weeks of stock. Type what you have on hand, or tap +pkg when you unpack groceries.'},
+ {sel:'aside.panel',t:'Space and calories',b:'The gauges show how full your shelves, fridge and freezer would be at target, and the calorie line tells you whether the plan actually feeds the household.'},
+ {sel:'[data-tab="shopping"]',t:'Shopping',b:'Whatever it takes to get back to target, in whole packages. Tick items as you buy them and stock updates. Items you make at home list their raw ingredients instead.'},
+ {sel:'[data-tab="recipes"]',t:'Recipes',b:'What you can cook right now from what is on hand. Open a recipe to set how often you cook it — that is what puts its ingredients on the plan. Add your own with + Add a recipe.'},
+ {sel:'[data-tab="alerts"]',t:'Alerts',b:'Out, running low, expiring, or over capacity — the things to act on this week.'},
+ {sel:'[data-tab="settings"]',t:'Settings',b:'Change household, weeks, space, recipes, add staples, share with your household, and export a backup. Done!'},
+];
+let tourI=-1;
+function startTour(){tourI=0;showTour();}
+function showTour(){document.querySelectorAll('.tour-hl').forEach(e=>e.classList.remove('tour-hl'));let box=$('#tour');if(tourI<0||tourI>=TOUR.length){if(box)box.remove();tourI=-1;return;}
+  const s=TOUR[tourI];if(!box){box=document.createElement('div');box.id='tour';document.body.appendChild(box);}
+  const el=s.sel?document.querySelector(s.sel):null;if(el){el.classList.add('tour-hl');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+  box.innerHTML=`<div class="tour-card"><div class="tiny muted">Step ${tourI+1} of ${TOUR.length}</div><h3>${esc(s.t)}</h3><p>${esc(s.b)}</p><div class="row between"><button class="ghost small" data-act="tour-skip">${tourI===TOUR.length-1?'Close':'Skip tour'}</button><div class="row">${tourI>0?'<button class="small" data-act="tour-prev">Back</button>':''}${tourI<TOUR.length-1?'<button class="small primary" data-act="tour-next">Next</button>':'<button class="small primary" data-act="tour-skip">Done</button>'}</div></div></div>`;}
 /* ============================================================ household sync (Supabase) */
 const SYNCKEY='shelfAndWeeks.sync', SYNC_APP='pantry';
 let sync=loadSync(), pushTimer=null, pullTimer=null;
@@ -749,7 +796,8 @@ function renderSyncSettings(){return `<p class="tiny muted">Two phones (or a pho
   <div class="row"><button class="primary" data-act="sync-save">Save sync settings</button><button data-act="sync-now" ${syncReady()?'':'disabled'}>Sync now</button><span id="syncStatus" class="tiny" style="color:${sync.ok===false?'var(--alert)':'var(--muted)'}">${esc(sync.status||(sync.enabled?'':'Not shared — this browser only'))}</span></div>`;}
 
 /* ============================================================ wizard */
-function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cooking'];let body='';const sp=state.space,p=state.prefs;
+function wrCountText(){const n=Object.values(state.recipes).filter(v=>v>0).length;const meals=Object.values(state.recipes).reduce((a,v)=>a+(Number(v)||0),0);return `${n} recipes · ${num(meals)} meals a week`;}
+function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cooking','Recipes'];let body='';const sp=state.space,p=state.prefs;
   if(st===0)body=`<h2>Who are you feeding, and for how long?</h2><p class="help">Kids count as 0.6 of an adult. "Weeks of stock" is how long you want to be able to cook without a grocery run — 2–4 weeks is a well-stocked kitchen, 8–12 is hurricane-season territory.</p>
     <div class="grid3" style="max-width:520px"><div><label>Adults</label><input type="number" id="wAdults" min="1" max="20" value="${state.adults}"></div><div><label>Kids</label><input type="number" id="wKids" min="0" max="20" value="${state.kids}"></div><div><label>Weeks of stock</label><input type="number" id="wWeeks" min="1" max="26" value="${state.weeks}"></div></div>
     <label style="max-width:520px">Pantry name</label><input id="wName" value="${esc(state.name)}" style="max-width:520px">
@@ -765,7 +813,12 @@ function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cookin
     <label class="check"><input type="checkbox" id="wGf" ${p.gf?'checked':''}>Gluten-free</label>
     <label class="check"><input type="checkbox" id="wBake" ${p.bake?'checked':''}>I bake bread at home</label>
     <label class="check"><input type="checkbox" id="wWater" ${p.water?'checked':''}>Stock emergency drinking water <span class="hint">(1 gal per person per day)</span></label>
-    <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-finish">Build my stock plan</button></div>`;
+    <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-next">Continue</button></div>`;
+  if(st===3){const q=(ui.wq||'').toLowerCase();const list=allRecipes().filter(r=>!r.yields&&r.g!=='shelf'&&(!q||r.n.toLowerCase().includes(q)));const groups=['meals','light','breakfast','sides','sweets'];
+    body=`<h2>What do you actually cook?</h2><p class="help">Tick the recipes in your regular rotation and say roughly how many times a week you make each. <b>This is what decides your shopping list</b> — only the raw ingredients these recipes need get stocked (plus anything you later mark "always keep stocked", like coffee). We pre-ticked 15 common ones; change anything.</p>
+    <div class="row between"><input placeholder="Search recipes" value="${esc(ui.wq||'')}" data-act="wq" style="max-width:280px"><span class="tiny muted" id="wrCount">${wrCountText()}</span><button class="small" data-act="recipe-new">+ Add my own recipe</button></div>
+    ${groups.map(g=>{const rs=list.filter(r=>r.g===g);if(!rs.length)return '';return `<h3 style="margin-top:1em">${GROUP_LABEL[g]}</h3>${rs.map(r=>`<label class="wr row" style="padding:.35em .2em;border-bottom:1px solid var(--line);margin:0;font-weight:400;cursor:pointer"><input type="checkbox" data-act="wr" data-id="${r.id}" ${freq(r.id)>0?'checked':''} style="width:auto"><span style="font-size:1.2rem">${r.e}</span><span style="flex:1"><b>${esc(r.n)}</b>${r.custom?' <span class="chip">custom</span>':''} <span class="tiny muted">${r.time} min · ~${Math.round(recipeKcal(r))} kcal</span></span><input type="number" min="0" step="0.5" value="${num(freq(r.id))}" data-act="wr" data-id="${r.id}" style="width:64px" aria-label="times per week"><span class="tiny muted">×/wk</span></label>`).join('')}`;}).join('')}
+    <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-finish">Build my stock plan</button></div>`;}
   $('#app').innerHTML=`<div class="wizard"><div class="hero"><div><h1>Shelf &amp; Weeks</h1><p>Tell it how many people, how many weeks and how much shelf space, and it works out the raw staples to keep, fits them to the space, tracks what is on hand, and shows what you can cook tonight.</p></div>
     <div class="card" style="background:var(--panel)"><b>${STAPLES.length} staples, ${RECIPES.length} recipes</b> — plus your own<p class="tiny muted" style="margin:.3em 0 0">Grains, legumes, cans, oils, baking, spices, long-keeping produce, fridge and freezer basics — every recipe uses only what is on the list.</p></div></div>
     <div class="steps">${steps.map((s,i)=>`<span class="${i===st?'on':i<st?'done':''}">${i+1}. ${s}</span>`).join('')}</div>${body}</div>`;}
@@ -783,10 +836,11 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
     case 'inc':{const s=staple(id);it(id).on=(it(id).on||0)+s.pkg;save();render();break;}
     case 'dec':{const s=staple(id);const step=['each','can','cube','bag','box','jar','loaf','head'].includes(s.unit)?1:s.unit==='lb'?0.5:s.unit==='gal'?0.25:1;it(id).on=Math.max(0,(it(id).on||0)-step);save();render();break;}
     case 'off':{const o=it(id);o.off=!o.off;save();closeDialog();render();toast(o.off?'Removed from plan':'Added to plan');break;}
-    case 'detail-save':{const o=it(id);const s=staple(id);o.on=Math.max(0,Number($('#dOn').value)||0);const per=Number($('#dPer').value);o.per=(isNaN(per)||per===s.per)?null:per;const pr=Number($('#dPrice').value);o.price=(isNaN(pr)||pr===s.price)?null:pr;o.exp=$('#dExp').value||null;save();closeDialog();render();break;}
+    case 'detail-save':{const o=it(id);const s=staple(id);o.on=Math.max(0,Number($('#dOn').value)||0);const per=Number($('#dPer').value);o.per=(isNaN(per)||per===s.per)?null:per;const pr=Number($('#dPrice').value);o.price=(isNaN(pr)||pr===s.price)?null:pr;o.exp=$('#dExp').value||null;o.basic=$('#dBasic').checked;save();closeDialog();render();break;}
     case 'cooked':{const r=recipe(id);const b=Number(el.dataset.b)||1;const c=recipeCheck(r,b);c.rows.forEach(x=>{if(x.s&&x.have)it(x.id).on=Math.max(0,(it(x.id).on||0)-x.need);});
       if(r.yields&&staple(r.yields.id)){it(r.yields.id).on=(it(r.yields.id).on||0)+r.yields.qty*b;}
       save();closeDialog();toast(r.yields?`${num(r.yields.qty*b)} ${staple(r.yields.id)?.unit||''} of ${staple(r.yields.id)?.n||r.yields.id} added to stock`:`Enjoy the ${r.n.toLowerCase()} — ingredients subtracted`);render();break;}
+    case 'basic-on':it(id).basic=true;save();render();toast('Added to the plan as a basic');break;
     case 'make-toggle':{const o=it(id);o.make=!o.make;save();render();toast(o.make?'Making it at home — raw ingredients go on the shopping list':'Buying it');break;}
     case 'batches':break;
     case 'recipe-new':showRecipeForm(null,el.dataset.out);break;
@@ -804,11 +858,18 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
     case 'custom-del':{if(!confirm('Delete this staple?'))return;state.customStaples=state.customStaples.filter(c=>c.id!==id);delete state.items[id];save();closeDialog();render();break;}
     case 'wiz-next':{if(ui.wiz===0){state.adults=Math.max(1,Number($('#wAdults').value)||2);state.kids=Math.max(0,Number($('#wKids').value)||0);state.weeks=Math.max(1,Math.min(26,Number($('#wWeeks').value)||4));state.name=$('#wName').value.trim()||'Home pantry';}
       if(ui.wiz===1){state.space={shelves:+$('#wShelves').value||0,w:+$('#wW').value||0,d:+$('#wD').value||0,h:+$('#wH').value||12,fridge:+$('#wFridge').value||0,freezer:+$('#wFreezer').value||0};}
+      if(ui.wiz===2){state.prefs={fridge:$('#wFridgeOn').checked,freezer:$('#wFreezerOn').checked,veg:$('#wVeg').checked,gf:$('#wGf').checked,bake:$('#wBake').checked,water:$('#wWater').checked};
+        if(!Object.keys(state.recipes).length&&!state._legacy){STARTER.forEach(id=>{const r=recipe(id);if(r&&recipeCheck(r).fits)state.recipes[id]=1;});['salt','pepper','oil','sugar','coffee'].forEach(id=>it(id).basic=true);if(state.prefs.water)it('water').basic=true;}}
       ui.wiz++;save();renderWizard();break;}
     case 'wiz-back':ui.wiz=Math.max(0,ui.wiz-1);renderWizard();break;
-    case 'wiz-finish':{state.prefs={fridge:$('#wFridgeOn').checked,freezer:$('#wFreezerOn').checked,veg:$('#wVeg').checked,gf:$('#wGf').checked,bake:$('#wBake').checked,water:$('#wWater').checked};state.setup=true;ui.wiz=0;save();render();break;}
+    case 'wiz-finish':{state.setup=true;ui.wiz=0;delete state._legacy;save();render();if(state.settings.tutorial!==false)startTour();break;}
     case 'rerun':state.setup=false;ui.wiz=0;save();renderWizard();break;
+    case 'choose-recipes':state.setup=false;ui.wiz=3;save();renderWizard();break;
     case 'sync-gen':$('#syCode').value=genCode();break;
+    case 'tour-next':tourI++;showTour();break;
+    case 'tour-prev':tourI--;showTour();break;
+    case 'tour-skip':tourI=-1;showTour();break;
+    case 'tour-start':startTour();break;
     case 'copy-sql':(navigator.clipboard?navigator.clipboard.writeText(SYNC_SQL):Promise.reject()).then(()=>toast('SQL copied')).catch(()=>toast('Select the text and copy it'));break;
     case 'sync-save':{sync.url=$('#syUrl').value.trim().replace(/\/+$/,'');sync.key=$('#syKey').value.trim();sync.code=$('#syCode').value.trim();sync.enabled=$('#syOn').checked;sync.ok=null;sync.status=sync.enabled?'Connecting…':'Not shared — this browser only';saveSync();render();if(syncReady()){pullState(true).then(startSyncLoop);}else{clearInterval(pullTimer);}break;}
     case 'sync-now':pullState(true);break;
@@ -818,7 +879,10 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   }});
 document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.act==='batches'){showRecipe(el.dataset.id,el.value);return;}
+  if(el.dataset.act==='freq'){const v=Math.max(0,Number(el.value)||0);if(v)state.recipes[el.dataset.id]=v;else delete state.recipes[el.dataset.id];save();$('aside.panel').innerHTML=renderSide(alerts());return;}
+  if(el.dataset.act==='wr'){const id=el.dataset.id;if(el.type==='checkbox'){if(el.checked)state.recipes[id]=state.recipes[id]>0?state.recipes[id]:1;else delete state.recipes[id];}else{const v=Math.max(0,Number(el.value)||0);if(v)state.recipes[id]=v;else delete state.recipes[id];}save();const row=el.closest('.wr');if(row){const f=row.querySelector('input[type=number]');if(f)f.value=num(freq(id));row.querySelector('input[type=checkbox]').checked=freq(id)>0;}const c=$('#wrCount');if(c)c.textContent=wrCountText();return;}
   if(el.name==='hasYield'){$('#yieldBox').style.display=el.checked?'':'none';return;}
+  if(el.name==='ing'&&el.value==='__new'){ui.recipeDraft=recipeDraft();showCustomForm(null);toast('Save the new ingredient and you will be returned to the recipe');return;}
   if(el.dataset.act==='on'){it(el.dataset.id).on=Math.max(0,Number(el.value)||0);save();render();return;}
   if(el.dataset.act==='bought'){const s=staple(el.dataset.id);if(el.checked){it(s.id).on=(it(s.id).on||0)+Number(el.dataset.n)*s.pkg;delete state.wanted[s.id];save();toast(`${s.n} restocked`);setTimeout(render,250);}return;}
   if(el.dataset.act==='cat'){ui.cat=el.value;render();return;} if(el.dataset.act==='only'){ui.only=el.value;render();return;}
@@ -827,7 +891,7 @@ document.addEventListener('change',e=>{const el=e.target;
     setDeep(k,v);save();if(el.type==='range'){$('#wkLabel').textContent=v;$('aside.panel').innerHTML=renderSide(alerts());}else render();return;}
   if(el.id==='importFile'&&el.files[0]){const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(!s||!s.items)throw 0;state=Object.assign(fresh(),s);state.customRecipes=state.customRecipes||[];save();toast('Backup imported');render();}catch(x){toast('That file is not a pantry backup.');}};rd.readAsText(el.files[0]);}
 });
-document.addEventListener('input',e=>{const el=e.target;if(el.dataset.act!=='q')return;ui.q=el.value;const pos=el.selectionStart;$('#content').innerHTML=renderTab();const n=$('#content [data-act="q"]');if(n){n.focus();n.setSelectionRange(pos,pos);}});
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset.act==='wq'){ui.wq=el.value;const pos=el.selectionStart;renderWizard();const n=$('[data-act="wq"]');if(n){n.focus();n.setSelectionRange(pos,pos);}return;}if(el.dataset.act!=='q')return;ui.q=el.value;const pos=el.selectionStart;$('#content').innerHTML=renderTab();const n=$('#content [data-act="q"]');if(n){n.focus();n.setSelectionRange(pos,pos);}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.act==='on')e.target.blur();});
 dlg().addEventListener('click',e=>{if(e.target===dlg())closeDialog();});
 
@@ -835,3 +899,4 @@ state=load();render();startSyncLoop();
 </script>
 </body>
 </html>
+
