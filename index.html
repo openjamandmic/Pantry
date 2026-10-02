@@ -159,7 +159,7 @@ dialog .dbody{padding:1.2em; overflow:auto; max-height:88vh}
 <dialog id="dlg"><div class="dbody" id="dlgBody"></div></dialog>
 <script>
 /* ============================================================
-   STAPLES — raw ingredients a home pantry runs on.
+   INGREDIENTS — the raw ingredients a home pantry runs on.
    per  = amount one adult uses in a typical week (kids count 0.6)
    pkg  = size of one package in that unit; pkgName describes it
    vol  = cubic inches of storage per unit, packaging included
@@ -246,7 +246,7 @@ S('citrus','Lemons / limes / oranges','🍋','Produce (long-keeping)','lb',1,4,'
 /* Drinks & water */
 S('coffee','Coffee','☕','Drinks & water','oz',4,12,'12 oz bag',3,6,'dry',2,[],9,'Freeze whole beans you will not use within a month.'),
 S('tea','Tea bags','🍵','Drinks & water','bag',7,100,'box of 100',0.3,24,'dry',3,[],5,''),
-S('water','Drinking water (emergency)','💧','Drinks & water','gal',7,1,'1 gal jug',260,12,'dry',1,['water'],1.2,'One gallon per person per day is the emergency guideline. Bulky — count it against shelf space honestly.'),
+S('water','Drinking water (emergency)','💧','Drinks & water','gal',7,1,'1 gal jug',260,12,'dry',1,['water'],1.2,'Counted down automatically at one gallon per person per day — you never have to log it. Bulky; it counts against shelf space honestly.'),
 /* Fridge */
 S('eggs','Eggs','🥚','Dairy & eggs','each',7,12,'dozen',8,1.5,'fridge',1,[],3.5,'Fine for 3–5 weeks past the date if kept cold.'),
 S('butter','Butter','🧈','Dairy & eggs','lb',0.25,1,'1 lb (4 sticks)',30,3,'fridge',1,[],5,'Freezes for a year — keep the extra in the freezer.'),
@@ -490,10 +490,14 @@ R('split-pea','Split pea soup','🍲',75,[['split-peas',1],['onions',.5],['carro
  'Simmer peas, onion, carrot, garlic, bay and 8 cups water with bouillon for an hour, stirring now and then, until the peas collapse. Sausage makes it a meal.',['gf']),
 ];
 
-const RGROUPS={"shelf": ["bread", "tortillas", "crackers", "tomato-sauce"], "breakfast": ["pancakes", "oatmeal", "granola", "baked-oatmeal", "scrambled-toast", "omelets", "breakfast-burritos", "french-toast", "waffles", "muffins", "cinnamon-toast", "yogurt-parfait", "smoothie", "biscuits-gravy", "frittata", "shakshuka", "hash-browns", "biscuits"], "sides": ["mashed-potatoes", "roast-potatoes", "roast-sweet-carrots", "mashed-sweet", "glazed-carrots", "coleslaw", "potato-salad", "pasta-salad", "three-bean-salad", "deviled-eggs", "hummus", "cornbread", "spanish-rice", "applesauce"], "sweets": ["choc-chip-cookies", "oatmeal-cookies", "pb-cookies", "brownies", "apple-crisp", "rice-pudding", "pb-bites", "hot-cocoa", "popcorn"], "light": ["pbj", "tuna-salad", "egg-salad", "chicken-salad", "quesadillas", "grilled", "egg-drop-soup", "quick-noodle-soup", "tomato-soup"]};
-const GROUP_LABEL={shelf:'Make for the shelf',breakfast:'Breakfast',meals:'Dinners & mains',light:'Lunches & light meals',sides:'Sides & salads',sweets:'Sweets & snacks'};
-RECIPES.forEach(r=>{r.g=Object.keys(RGROUPS).find(g=>RGROUPS[g].includes(r.id))||(r.yields?'shelf':'meals');});
-const STARTER=['rice-beans','marinara','tacos','chicken-noodle','sheet-pan-chicken','mac-cheese','chili','stir-fry','lentil-soup','quesadillas','fried-rice','pancakes','oatmeal','scrambled-toast','pbj'];
+const DEFAULT_CATS=['Dinner mains','Lunches','Breakfast','Sides','Desserts','Snacks','Sauces & dips'];
+const RCATS={"Lunches": ["pbj", "tuna-salad", "egg-salad", "chicken-salad", "quesadillas", "egg-drop-soup", "quick-noodle-soup", "tomato-soup", "tuna-pasta", "burritos", "tuna-patties", "veg-soup", "minestrone", "black-bean-soup", "lentil-soup", "split-pea", "corn-chowder", "tortilla-soup"], "Breakfast": ["pancakes", "oatmeal", "scrambled-toast", "omelets", "breakfast-burritos", "french-toast", "waffles", "muffins", "cinnamon-toast", "yogurt-parfait", "smoothie", "biscuits-gravy", "frittata", "shakshuka", "hash-browns", "baked-oatmeal"], "Sides": ["mashed-potatoes", "roast-potatoes", "roast-sweet-carrots", "mashed-sweet", "glazed-carrots", "coleslaw", "potato-salad", "pasta-salad", "three-bean-salad", "deviled-eggs", "cornbread", "spanish-rice", "applesauce", "biscuits", "bread", "tortillas"], "Desserts": ["choc-chip-cookies", "oatmeal-cookies", "pb-cookies", "brownies", "apple-crisp", "rice-pudding"], "Snacks": ["pb-bites", "popcorn", "granola", "hot-cocoa", "crackers"], "Sauces & dips": ["hummus", "tomato-sauce"]};
+RECIPES.forEach(r=>{r.cat=Object.keys(RCATS).find(c=>RCATS[c].includes(r.id))||'Dinner mains';r.tier=2;});
+const STARTER_DINNERS=['rice-beans','marinara','tacos','chicken-noodle','sheet-pan-chicken','mac-cheese','chili','stir-fry','fried-rice'];
+const STARTER_SIDES=['roast-potatoes','coleslaw','cornbread'];
+const STARTER_LUNCHES=['pbj','quesadillas','lentil-soup','tuna-salad'];
+const STARTER_EXTRAS={'pancakes':1,'oatmeal':3,'scrambled-toast':2,'popcorn':1};
+[...STARTER_DINNERS,...STARTER_SIDES,...STARTER_LUNCHES,...Object.keys(STARTER_EXTRAS)].forEach(id=>{const r=RECIPES.find(x=>x.id===id);if(r)r.tier=1;});
 </script>
 <script>
 /* ============================================================ helpers */
@@ -518,9 +522,19 @@ let state=null, storageOK=true;
 const ui={tab:'stock',q:'',cat:'',only:'',wiz:0,rtab:'now'};
 function fresh(){return {version:1,setup:false,name:'Home pantry',adults:2,kids:0,weeks:4,
   space:{shelves:5,w:36,d:16,h:12,fridge:12,freezer:6},prefs:{veg:false,gf:false,bake:false,water:false,fridge:true,freezer:true},
-  items:{},customStaples:[],customRecipes:[],recipes:{},wanted:{},settings:{theme:'auto',tutorial:true}};}
+  items:{},customStaples:[],customRecipes:[],recipes:{},meals:{dinner:{count:7,mains:[],sides:[]},lunch:{count:5,mains:[],sides:[]}},cats:DEFAULT_CATS.slice(),rcat:{},rtier:{},wanted:{},waterTick:null,settings:{theme:'auto',tutorial:true}};}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const s=Object.assign(fresh(),JSON.parse(r));s.items=s.items||{};s.wanted=s.wanted||{};s.customStaples=s.customStaples||[];s.customRecipes=s.customRecipes||[];s.settings=Object.assign({theme:'auto',tutorial:true},s.settings||{});
-  if(!s.recipes){ s.recipes={}; Object.keys(s.items).forEach(id=>{}); s._legacy=true; } return s;}}catch(e){}return fresh();}
+  if(!s.recipes){ s.recipes={}; s._legacy=true; }
+  s.cats=s.cats||DEFAULT_CATS.slice(); s.rcat=s.rcat||{}; s.rtier=s.rtier||{};
+  if(!s.meals){ s.meals={dinner:{count:7,mains:[],sides:[]},lunch:{count:5,mains:[],sides:[]}}; s._migrateMeals=true; }
+  return s;}
+}catch(e){}return fresh();}
+function migrateMeals(){ if(!state._migrateMeals) return; delete state._migrateMeals; const ex={}; let dn=0,ln=0;
+  Object.entries(state.recipes).forEach(([id,f])=>{ const r=recipe(id); if(!r||!(f>0)) return; const c=rcat(r);
+    if(c==='Dinner mains'){ state.meals.dinner.mains.push(id); dn+=f; } else if(c==='Lunches'){ state.meals.lunch.mains.push(id); ln+=f; } else if(c==='Sides'){ state.meals.dinner.sides.push(id); } else ex[id]=f; });
+  if(state.meals.dinner.mains.length) state.meals.dinner.count=Math.max(1,Math.round(dn)); if(state.meals.lunch.mains.length) state.meals.lunch.count=Math.max(1,Math.round(ln));
+  state.recipes=ex; save(); }
+
 function save(){_demand=null;state.rev=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}schedulePush();}
 function saveLocalOnly(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}}
 
@@ -534,12 +548,20 @@ function inPrefs(s){const p=state.prefs;
   if(!p.bake&&s.tags.includes('bake'))return false; if(!p.water&&s.tags.includes('water'))return false;
   if(!p.fridge&&s.store==='fridge')return false; if(!p.freezer&&s.store==='freezer')return false; return true;}
 function planned(){return allStaples().filter(s=>inPrefs(s)&&!it(s.id).off&&rate(s)>0);}
-function freq(id){return Number(state.recipes[id])||0;}
+function rcat(r){return state.rcat[r.id]||r.cat||'Dinner mains';}
+function rtier(r){return state.rtier[r.id]||r.tier||2;}
+const RTIER={1:'Essential',2:'Standard',3:'Nice to have'};
+function freq(id){let f=Number(state.recipes[id])||0;['dinner','lunch'].forEach(m=>{const M=state.meals[m];if(!M||!M.count)return;if(M.mains.includes(id)&&M.mains.length)f+=M.count/M.mains.length;if(M.sides.includes(id)&&M.sides.length)f+=M.count/M.sides.length;});return f;}
+function mealToggle(meal,role,id,on){const arr=state.meals[meal][role];const i=arr.indexOf(id);if(on&&i<0)arr.push(id);if(!on&&i>=0)arr.splice(i,1);}
+function householdLabel(){return `${state.adults} adult${state.adults===1?'':'s'}${state.kids?` + ${state.kids} kid${state.kids===1?'':'s'}`:''}`;}
 function inRotation(r){return freq(r.id)>0||(r.yields&&state.recipes[r.id]==='make');}
 let _demand=null,_demandKey='';
-function recipeDemand(){const key=JSON.stringify([state.recipes,state.adults,state.kids,state.customRecipes.length]);if(_demand&&_demandKey===key)return _demand;const dm={};const sc=scale();
+function recipeDemand(){const key=JSON.stringify([state.recipes,state.meals,state.adults,state.kids,state.customRecipes.length]);if(_demand&&_demandKey===key)return _demand;const dm={};const sc=scale();
   allRecipes().forEach(r=>{const f=freq(r.id);if(!f||r.yields)return;r.ings.forEach(([id,q,opt])=>{if(opt)return;dm[id]=(dm[id]||0)+q*sc*f;});});_demand=dm;_demandKey=key;return dm;}
-function isBasic(s){const o=state.items[s.id];if(o&&o.basic!=null)return !!o.basic;return !!state._legacy;}
+function isBasic(s){if(s.id==='water')return true;const o=state.items[s.id];if(o&&o.basic!=null)return !!o.basic;return !!state._legacy;}
+function waterTick(){const w=staple('water');if(!w||!inPrefs(w))return;const t=iso(today());const last=state.waterTick||t;const days=Math.round((parseISO(t)-parseISO(last))/DAY);
+  if(days>0){const o=it('water');const before=o.on||0;o.on=Math.max(0,before-days*rate(w)/7);if(before>0&&o.on<before)toast(`Water: counted down ${num(before-o.on,1)} gal for ${days} day${days===1?'':'s'}`);}
+  if(state.waterTick!==t){state.waterTick=t;saveLocalOnly();}}
 function rate(s){const o=state.items[s.id];const per=o&&o.per!=null?o.per:s.per;const basic=isBasic(s)?per*people():0;return (recipeDemand()[s.id]||0)+basic;}
 function planKcalPerAdultDay(){const tot=planned().reduce((a,s)=>a+rate(s)*(s.kcal||0),0);return people()>0?tot/people()/7:0;}
 function recipeKcal(r){const sc=r.yields?1:scale();const tot=r.ings.reduce((a,[id,q,opt])=>{const s=staple(id);return a+(s?q*sc*(s.kcal||0):0);},0);return r.yields?tot:tot/(sc*4);}
@@ -590,28 +612,28 @@ function renderTab(){switch(ui.tab){case 'shopping':return renderShopping();case
 function gauge(store){const u=usage(store),c=capacity(store);if(c<=0)return '';const p=Math.min(1,u/c);const cls=u>c?'bad':p>0.85?'warn':'';const fw=fitWeeks(store);
   return `<div style="margin:.5em 0"><div class="row between tiny"><b>${STORES[store].e} ${STORES[store].label}</b><span class="muted">${Math.round(u/c*100)}% · fits ~${fw===Infinity?'∞':fw} wk</span></div><div class="gauge"><i class="${cls}" style="width:${p*100}%"></i></div></div>`;}
 function renderSide(al){const shop=shopping();const cost=shop.reduce((a,x)=>a+x.cost,0);const can=RECIPES.filter(r=>recipeCheck(r).can).length;
-  let h=`<div class="stack"><div class="card accent"><b>${state.weeks}-week plan for ${state.adults} adult${state.adults===1?'':'s'}${state.kids?` + ${state.kids} kid${state.kids===1?'':'s'}`:''}</b><div class="muted tiny" style="margin-top:.2em">${Object.values(state.recipes).filter(v=>v>0).length} recipes in rotation · ${planned().length} staples · ${can} cookable right now</div>
+  let h=`<div class="stack"><div class="card accent"><b>${state.weeks}-week plan for ${state.adults} adult${state.adults===1?'':'s'}${state.kids?` + ${state.kids} kid${state.kids===1?'':'s'}`:''}</b><div class="muted tiny" style="margin-top:.2em">${allRecipes().filter(r=>freq(r.id)>0).length} recipes in rotation · ${planned().length} ingredients · ${can} cookable right now</div>
   <div style="margin-top:.5em;font-size:.9rem">≈ <b>${Math.round(planKcalPerAdultDay()).toLocaleString()}</b> kcal per adult per day from this plan <span class="muted tiny">(2,000–2,600 feeds most adults; it only counts meals in your rotation and basics — if it is low, add breakfasts, lunches or snacks)</span></div></div>
   <div><h3>Space</h3>${gauge('dry')}${gauge('fridge')}${gauge('freezer')}<p class="tiny muted">Volumes are estimates from typical package sizes; 25% of shelf space is reserved for air and awkward shapes.</p></div>`;
   if(shop.length)h+=`<div class="card"><b>To buy:</b> ${shop.length} item${shop.length===1?'':'s'}, roughly ${money(cost)} <button class="small" data-act="tab" data-tab="shopping" style="margin-left:.4em">Open</button></div>`;
   const top=al.filter(a=>a.type!=='exp').slice(0,6); if(!anyStock())h+=`<div class="card"><b>Next step:</b> go through the Stock tab and enter what you already have. Everything else — alerts, the shopping list, recipes — follows from that.</div>`; if(top.length)h+=`<div><h3>Needs attention</h3><ul class="alerts">${top.map(a=>`<li data-act="${a.id?'detail':'tab'}" data-id="${a.id||''}" data-tab="alerts"><span class="dot ${a.type}"></span><span>${esc(a.text)}</span></li>`).join('')}</ul></div>`;
-  h+=`<div class="row"><button class="small" data-act="custom-new">+ Add a staple</button><button class="small" data-act="tab" data-tab="settings">Edit plan</button></div></div>`;return h;}
+  h+=`<div class="row"><button class="small" data-act="custom-new">+ Add an ingredient</button><button class="small" data-act="tab" data-tab="settings">Edit plan</button></div></div>`;return h;}
 function renderStock(){
   let list=allStaples().filter(s=>inPrefs(s)&&(ui.only==='all'||rate(s)>0||it(s.id).on>0)); const q=ui.q.toLowerCase();
   if(ui.cat)list=list.filter(s=>s.cat===ui.cat); if(q)list=list.filter(s=>(s.n+' '+s.cat).toLowerCase().includes(q));
   if(ui.only==='attn')list=list.filter(s=>!it(s.id).off&&(status(s).st!=='stocked'||status(s).exp)); if(ui.only==='tier1')list=list.filter(s=>s.tier===1);
-  let h=`<div class="row" style="margin-bottom:.5em"><input placeholder="Search staples" value="${esc(ui.q)}" data-act="q" style="flex:1;min-width:140px">
+  let h=`<div class="row" style="margin-bottom:.5em"><input placeholder="Search ingredients" value="${esc(ui.q)}" data-act="q" style="flex:1;min-width:140px">
     <select data-act="cat" style="width:auto"><option value="">All categories</option>${CATS.map(c=>`<option ${ui.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
-    <select data-act="only" style="width:auto"><option value="">Everything</option><option value="attn" ${ui.only==='attn'?'selected':''}>Needs attention</option><option value="tier1" ${ui.only==='tier1'?'selected':''}>Essentials only</option><option value="all" ${ui.only==='all'?'selected':''}>Show every staple</option></select></div>
-    <p class="tiny muted">Target = what ${state.weeks} weeks takes, rounded up to whole packages. Type what you actually have on hand; use +pkg when you unpack groceries. Click a name for details, expiry date and per-week adjustments. Only ingredients your recipes call for (plus anything marked "always keep stocked") appear here; choose "Show every staple" to add more. Items marked <span class="chip info" style="font-size:.7rem">made from raw</span> can be switched between buying and making — when you make them, the raw ingredients they need are added to the shopping list instead.</p>`;
+    <select data-act="only" style="width:auto"><option value="">Everything</option><option value="attn" ${ui.only==='attn'?'selected':''}>Needs attention</option><option value="tier1" ${ui.only==='tier1'?'selected':''}>Essentials only</option><option value="all" ${ui.only==='all'?'selected':''}>Show every ingredient</option></select></div>
+    <p class="tiny muted">Target = what ${state.weeks} weeks takes, rounded up to whole packages. Type what you actually have on hand; use +pkg when you unpack groceries. Click a name for details, expiry date and per-week adjustments. Only ingredients your recipes call for (plus anything marked "always keep stocked") appear here; choose "Show every ingredient" to add more. Items marked <span class="chip info" style="font-size:.7rem">made from raw</span> can be switched between buying and making — when you make them, the raw ingredients they need are added to the shopping list instead.</p>`;
   const over=['dry','fridge','freezer'].filter(st=>capacity(st)>0&&usage(st)>capacity(st));
   if(over.length){const st=over[0];const cand=planned().filter(s=>s.store===st&&s.tier===3).sort((a,b)=>b.vol*targetRounded(b)-a.vol*targetRounded(a)).slice(0,5);
-    h+=`<div class="card" style="background:var(--alert-soft);margin-bottom:.6em"><b>${STORES[st].label} is over capacity.</b> Options: drop to ${fitWeeks(st)} weeks in Settings, add shelf space, or take these nice-to-haves out of the plan: ${cand.map(s=>`<button class="tiny" data-act="off" data-id="${s.id}">${esc(s.n)} ✕</button>`).join(' ')||'(no extras left to cut)'}</div>`;}
+    h+=`<div class="card" style="background:var(--alert-soft);margin-bottom:.6em"><b>${STORES[st].label} is over capacity.</b> Options: drop to ${fitWeeks(st)} weeks in Settings, add shelf space, take these nice-to-have ingredients out: ${cand.map(s=>`<button class="tiny" data-act="off" data-id="${s.id}">${esc(s.n)} ✕</button>`).join(' ')||'(none left)'}${(()=>{const rs=allRecipes().filter(r=>rtier(r)===3&&freq(r.id)>0).slice(0,4);return rs.length?` — or drop a nice-to-have recipe: ${rs.map(r=>`<button class="tiny" data-act="drop-recipe" data-id="${r.id}">${esc(r.n)} ✕</button>`).join(' ')}`:'';})()}</div>`;}
   let cat='';list.sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||a.tier-b.tier||a.n.localeCompare(b.n));
   list.forEach(s=>{if(s.cat!==cat){cat=s.cat;h+=`<div class="cat-h"><h3>${esc(cat)}</h3></div>`;}
     const o=it(s.id),st=status(s);const off=o.off;
     h+=`<div class="item ${off?'off':''}" data-id="${s.id}"><div class="em">${s.e}</div>
-      <div class="nm" style="cursor:pointer" data-act="detail" data-id="${s.id}">${esc(s.n)}${s.custom?' <span class="chip">custom</span>':''}<small>${s.pkgName} · ${TIER[s.tier]}${s.made?` · <span class="chip info" style="font-size:.7rem">made from raw</span>`:''}${st.exp?` · <span style="color:${st.exp.cls==='bad'?'var(--alert)':'inherit'}">${st.exp.label}</span>`:''}</small></div>
+      <div class="nm" style="cursor:pointer" data-act="detail" data-id="${s.id}">${esc(s.n)}${s.custom?' <span class="chip">custom</span>':''}<small>${s.pkgName} · ${TIER[s.tier]}${s.id==='water'?' · counts down 1 gal/person/day by itself':''}${s.made?` · <span class="chip info" style="font-size:.7rem">made from raw</span>`:''}${st.exp?` · <span style="color:${st.exp.cls==='bad'?'var(--alert)':'inherit'}">${st.exp.label}</span>`:''}</small></div>
       <div class="tgt">${off?'<span class="muted">not in plan</span>':rate(s)>0?`${num(targetRounded(s))} ${s.unit}<small>${pkgs(s,target(s))} × ${s.pkgName} · ${num(rate(s),2)}/wk</small>`:`<span class="muted">no recipe uses it</span><small><button class="tiny" data-act="basic-on" data-id="${s.id}">Always keep stocked</button></small>`}</div>
       <div class="qty"><button class="tiny" data-act="dec" data-id="${s.id}" aria-label="Use one">−</button><input type="number" min="0" step="any" value="${num(o.on||0,2)}" data-act="on" data-id="${s.id}" aria-label="On hand"><span>${s.unit}</span><button class="tiny" data-act="inc" data-id="${s.id}" title="Add one package (${s.pkgName})" style="white-space:nowrap">+pkg</button></div>
       <div class="st">${off?`<button class="tiny" data-act="off" data-id="${s.id}">Add to plan</button>`:`<span class="chip ${st.cls}">${st.label}</span>${s.made?`<span class="row" style="gap:.2em">${recipeFor(s.id)?`<button class="tiny" data-act="make-toggle" data-id="${s.id}" title="Make it at home, or buy it?">${it(s.id).make?'🏠 making':'🛒 buying'}</button><button class="tiny" data-act="recipe" data-id="${recipeFor(s.id).id}">Make</button>`:`<button class="tiny" data-act="recipe-new" data-out="${s.id}" title="Add a recipe that makes this">+ recipe</button>`}</span>`:''}<div class="bar"><i class="${st.cls==='bad'?'bad':st.cls==='ok'?'warn':''}" style="width:${Math.min(100,st.ratio*100)}%"></i></div><span class="tiny muted">${st.days===Infinity?'':Math.round(st.days)+' days'}</span>`}</div></div>`;});
@@ -619,7 +641,7 @@ function renderStock(){
   return h;}
 function renderShopping(){const shop=shopping();const cost=shop.reduce((a,x)=>a+x.cost,0);
   let h=`<div class="row between"><h2>Shopping list</h2><div class="row"><button class="small" data-act="copy-shop">Copy as text</button><button class="small primary" data-act="bought-all" ${shop.length?'':'disabled'}>Bought everything</button></div></div>
-  <p class="tiny muted">Whatever it takes to get every planned staple back to its ${state.weeks}-week target, in whole packages. Prices are rough estimates — edit them per item. Tick items as you buy them and the on-hand count updates.</p>`;
+  <p class="tiny muted">Whatever it takes to get every planned ingredient back to its ${state.weeks}-week target, in whole packages. Prices are rough estimates — edit them per item. Tick items as you buy them and the on-hand count updates.</p>`;
   const mk=toMake();
   if(mk.length)h+=`<h3>Make at home</h3><ul class="shop" style="list-style:none;padding:0;margin:0 0 1em">${mk.map(x=>`<li><span>${x.s.e}</span><b>${esc(x.s.n)}</b><span class="muted">${x.b} batch${x.b===1?'':'es'} of ${esc(x.r.n)} → ${num(x.b*x.r.yields.qty)} ${x.s.unit}</span><button class="tiny" data-act="recipe" data-id="${x.r.id}">Recipe</button></li>`).join('')}</ul><p class="tiny muted">The raw ingredients for these batches are already counted in the list below.</p>`;
   if(!shop.length)return h+`<div class="card">${mk.length?'Nothing to buy — everything left is on the make-at-home list.':'Fully stocked. Nothing to buy.'}</div>`;
@@ -628,10 +650,12 @@ function renderShopping(){const shop=shopping();const cost=shop.reduce((a,x)=>a+
     h+=`<li><input type="checkbox" data-act="bought" data-id="${x.s.id}" data-n="${x.n}" aria-label="Bought"><span>${x.s.e}</span><b>${esc(x.s.n)}${x.wanted?' <span class="chip info">for a recipe</span>':''}</b><span class="muted">${x.n} × ${x.s.pkgName}</span><span class="muted tiny">${money(x.cost)}</span></li>`;});
   h+=`</ul><div class="card" style="margin-top:1em"><b>Estimated total: ${money(cost)}</b> for ${shop.length} items</div>`;return h;}
 function renderRecipes(){const sc=scale();const checked=allRecipes().map(r=>({r,c:recipeCheck(r)})).filter(x=>x.c.fits&&!x.r.yields);
+  if(ui.rcat)checked.splice(0,checked.length,...checked.filter(x=>rcat(x.r)===ui.rcat));
   const makers=allRecipes().filter(r=>r.yields).map(r=>{const s=staple(r.yields.id);return {r,s,c:recipeCheck(r,1),b:s?batchesNeeded(s):0};});
   const now=checked.filter(x=>x.c.can),near=checked.filter(x=>!x.c.can&&x.c.missing.length<=2),rest=checked.filter(x=>x.c.missing.length>2);
-  const item=x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div style="flex:1"><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}${freq(x.r.id)?` <span class="chip good">${num(freq(x.r.id))}×/wk</span>`:''}</div><div class="meta">${x.r.time} min · ~${Math.round(recipeKcal(x.r))} kcal/serving · ${x.r.ings.filter(i=>!i[2]).length} ingredients${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}${x.c.missing.length>3?` +${x.c.missing.length-3}`:''}`:''}</div></div></div>`;
-  let h=`<div class="row between"><h2>Recipes from the pantry</h2><button class="small primary" data-act="recipe-new">+ Add a recipe</button></div><p class="tiny muted">Meals are scaled to your household (${num(sc*4,1)} servings). Recipes in your rotation (green ×/wk tag) decide which raw ingredients the plan stocks; open a recipe to change how often you cook it. Marking one as cooked subtracts its ingredients from what you have on hand.</p>`;
+  const item=x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div style="flex:1"><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}${freq(x.r.id)?` <span class="chip good">${num(freq(x.r.id),1)}×/wk</span>`:''}${rtier(x.r)===1?' <span class="chip ok">essential</span>':rtier(x.r)===3?' <span class="chip">nice to have</span>':''}</div><div class="meta">${esc(rcat(x.r))} · ${x.r.time} min · ~${Math.round(recipeKcal(x.r))} kcal/serving · ${x.r.ings.filter(i=>!i[2]).length} ingredients${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}${x.c.missing.length>3?` +${x.c.missing.length-3}`:''}`:''}</div></div></div>`;
+  let h=`<div class="row between"><h2>Recipes from the pantry</h2><button class="small primary" data-act="recipe-new">+ Add a recipe</button></div><p class="tiny muted">Every recipe is measured to serve ${householdLabel()}. Recipes in your rotation (green ×/wk tag) decide which raw ingredients the plan stocks — dinners and lunches come from the meal planner; open any recipe to change its category, priority or rotation. Marking one as cooked subtracts its ingredients from what you have on hand.</p>
+  <div class="row" style="margin:.4em 0"><select data-act="rcat-filter" style="width:auto"><option value="">All categories</option>${state.cats.map(c=>`<option ${ui.rcat===c?'selected':''}>${esc(c)}</option>`).join('')}</select><button class="small" data-act="plan-meals">Plan my meals</button></div>`;
   if(makers.length)h+=`<h3 style="margin-top:.8em">Make for the shelf</h3><p class="tiny muted">Recipes that turn raw ingredients into a stocked item. Making one subtracts the ingredients and adds the result to stock.</p>${makers.map(x=>`<div class="recipe" data-act="recipe" data-id="${x.r.id}"><div class="em">${x.r.e}</div><div><div class="nm">${esc(x.r.n)}${x.r.custom?' <span class="chip">custom</span>':''}</div><div class="meta">${x.r.time} min · makes ${num(x.r.yields.qty)} ${x.s?x.s.unit+' of '+esc(x.s.n):esc(x.r.yields.id)}${x.b?` · <b>${x.b} batch${x.b===1?'':'es'} needed</b>`:''}${x.c.missing.length?` · missing ${x.c.missing.slice(0,3).map(m=>m.s?m.s.n.split(/[,(]/)[0].trim():m.id).join(', ')}`:' · <span class="chip good" style="font-size:.7rem">ready</span>'}</div></div></div>`).join('')}`;
   h+=`<h3 style="margin-top:1em">Cook tonight <span class="muted" style="font-weight:400">(${now.length})</span></h3>${now.map(item).join('')||'<p class="muted tiny">Nothing yet — stock a few essentials first.</p>'}`;
   if(near.length)h+=`<h3 style="margin-top:1em">One or two items short <span class="muted" style="font-weight:400">(${near.length})</span></h3>${near.map(item).join('')}`;
@@ -646,7 +670,7 @@ function renderSettings(){const sp=state.space,p=state.prefs;
   <label>Weeks of stock to keep: <b id="wkLabel">${state.weeks}</b></label><input type="range" min="1" max="26" value="${state.weeks}" data-set="weeks">
   <h3>Storage space</h3><p class="tiny muted">Dry shelves: number of shelves and the usable width, depth and clearance of each, in inches.</p>
   <div class="grid3"><div><label>Shelves</label><input type="number" min="0" value="${sp.shelves}" data-set="space.shelves"></div><div><label>Width (in)</label><input type="number" min="0" value="${sp.w}" data-set="space.w"></div><div><label>Depth (in)</label><input type="number" min="0" value="${sp.d}" data-set="space.d"></div></div>
-  <div class="grid3"><div><label>Clearance (in)</label><input type="number" min="0" value="${sp.h}" data-set="space.h"></div><div><label>Fridge (cu ft) <span class="hint">half counted for staples</span></label><input type="number" min="0" value="${sp.fridge}" data-set="space.fridge"></div><div><label>Freezer (cu ft)</label><input type="number" min="0" value="${sp.freezer}" data-set="space.freezer"></div></div>
+  <div class="grid3"><div><label>Clearance (in)</label><input type="number" min="0" value="${sp.h}" data-set="space.h"></div><div><label>Fridge (cu ft) <span class="hint">half counted for ingredients</span></label><input type="number" min="0" value="${sp.fridge}" data-set="space.fridge"></div><div><label>Freezer (cu ft)</label><input type="number" min="0" value="${sp.freezer}" data-set="space.freezer"></div></div>
   <h3>Cooking style</h3>
   <label class="check"><input type="checkbox" ${p.fridge?'checked':''} data-set="prefs.fridge">Include fridge items <span class="hint">(eggs, butter, cheese, milk)</span></label>
   <label class="check"><input type="checkbox" ${p.freezer?'checked':''} data-set="prefs.freezer">Include freezer items <span class="hint">(meat, frozen vegetables, bread)</span></label>
@@ -656,11 +680,13 @@ function renderSettings(){const sp=state.space,p=state.prefs;
   <label class="check"><input type="checkbox" ${p.water?'checked':''} data-set="prefs.water">Stock emergency drinking water <span class="hint">(1 gal per person per day — big)</span></label>
   <h3>Tutorial</h3><label class="check"><input type="checkbox" ${state.settings.tutorial!==false?'checked':''} data-set="settings.tutorial">Show the tutorial after setup</label><button class="small" data-act="tour-start">Replay the tutorial now</button>
   <label>Theme</label><select data-set="settings.theme"><option value="auto" ${state.settings.theme==='auto'?'selected':''}>Match device</option><option value="light" ${state.settings.theme==='light'?'selected':''}>Light</option><option value="dark" ${state.settings.theme==='dark'?'selected':''}>Dark</option></select>
-  <hr><h3>Your staples and recipes</h3><p class="tiny muted">${state.customStaples.length} custom staple${state.customStaples.length===1?'':'s'}, ${state.customRecipes.length} custom recipe${state.customRecipes.length===1?'':'s'}.</p><div class="row"><button data-act="custom-new">+ Add a staple</button><button data-act="recipe-new">+ Add a recipe</button></div>
+  <hr><h3>Recipe categories</h3><div class="row">${state.cats.map(c=>`<span class="chip">${esc(c)}${allRecipes().some(r=>rcat(r)===c)?'':` <button class="tiny ghost" data-act="cat-del" data-cat="${esc(c)}" aria-label="Delete category" style="padding:0 .2em">✕</button>`}</span>`).join('')}</div>
+  <div class="row" style="margin-top:.4em"><input id="newCat" placeholder="New category" style="max-width:220px"><button class="small" data-act="cat-add">Add</button></div><p class="tiny muted">A category can be deleted once no recipe uses it.</p>
+  <hr><h3>Your ingredients and recipes</h3><p class="tiny muted">${state.customStaples.length} custom ingredient${state.customStaples.length===1?'':'s'}, ${state.customRecipes.length} custom recipe${state.customRecipes.length===1?'':'s'}.</p><div class="row"><button data-act="custom-new">+ Add an ingredient</button><button data-act="recipe-new">+ Add a recipe</button></div>
   <hr><h3>Share with your household</h3>${renderSyncSettings()}
   <hr><h3>Your data</h3><p class="tiny muted">Everything lives in this browser${syncReady()?' and in your shared household table':''}. Export a backup to keep it or move it to another device.</p>
   <div class="row"><button data-act="export">Export backup (.json)</button><button data-act="import">Import backup</button><input type="file" id="importFile" accept="application/json" class="sr"></div>
-  <hr><div class="row"><button data-act="choose-recipes">Choose my recipes</button><button data-act="rerun">Re-run setup wizard</button><button class="danger" data-act="reset">Start over (deletes everything)</button></div>
+  <hr><div class="row"><button data-act="choose-recipes">Plan my meals</button><button data-act="rerun">Re-run setup wizard</button><button class="danger" data-act="reset">Start over (deletes everything)</button></div>
   <p class="tiny muted" style="margin-top:1.5em">Weekly amounts are typical for a household cooking mostly from scratch; adjust any item's per-week rate from its detail view and the whole plan follows.</p></div>`;}
 
 /* ============================================================ dialogs */
@@ -674,17 +700,23 @@ function showDetail(id){const s=staple(id);if(!s)return;const o=it(id),st=status
   <label>Expiry / best-by of the oldest package <span class="hint">(optional)</span></label><input type="date" id="dExp" value="${o.exp||''}">
   <label class="check" style="margin-top:.6em"><input type="checkbox" id="dBasic" ${isBasic(s)?'checked':''}>Always keep stocked at the per-adult rate <span class="hint">(coffee, salt, snacks — things no recipe covers)</span></label>
   ${uses.length?`<p class="tiny muted" style="margin-top:.6em">Used in: ${uses.map(r=>r.n).join(', ')}</p>`:''}
-  <div class="row" style="margin-top:1em"><button class="primary" data-act="detail-save" data-id="${id}">Save</button><button data-act="off" data-id="${id}">${o.off?'Add to plan':'Remove from plan'}</button>${s.custom?`<button data-act="custom-edit" data-id="${id}">Edit staple</button><button class="danger" data-act="custom-del" data-id="${id}">Delete</button>`:''}<button class="ghost" data-act="dlg-close">Cancel</button></div>`);}
+  <div class="row" style="margin-top:1em"><button class="primary" data-act="detail-save" data-id="${id}">Save</button><button data-act="off" data-id="${id}">${o.off?'Add to plan':'Remove from plan'}</button>${s.custom?`<button data-act="custom-edit" data-id="${id}">Edit ingredient</button><button class="danger" data-act="custom-del" data-id="${id}">Delete</button>`:''}<button class="ghost" data-act="dlg-close">Cancel</button></div>`);}
 function showRecipe(id,batches){const r=recipe(id);if(!r)return;batches=Math.max(1,Number(batches)||1);const c=recipeCheck(r,batches);const sc=scale();const ys=r.yields?staple(r.yields.id):null;
   openDialog(`<div class="row between"><h2>${r.e} ${esc(r.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
-  <p class="tiny muted">${r.time} min · ${r.yields?`makes ${num(r.yields.qty*batches)} ${ys?ys.unit+' of '+esc(ys.n):esc(r.yields.id)}`:`${num(sc*4,1)} servings`} · ~${Math.round(recipeKcal(r)).toLocaleString()} kcal${r.yields?' per batch':' per serving'} · ${c.can?'<span class="chip good">You have everything</span>':`<span class="chip bad">Missing ${c.missing.length}</span>`}</p>
-  ${r.yields?'':`<div class="row" style="margin:.4em 0"><label style="margin:0">In my rotation</label><input type="number" min="0" step="0.5" value="${num(freq(id))}" data-act="freq" data-id="${id}" style="width:80px"><span class="tiny muted">times per week — this is what puts its ingredients on the shopping list</span></div>`}
+  <p class="tiny muted">${r.time} min · ${r.yields?`makes ${num(r.yields.qty*batches)} ${ys?ys.unit+' of '+esc(ys.n):esc(r.yields.id)}`:`measured for ${householdLabel()}`} · ~${Math.round(recipeKcal(r)).toLocaleString()} kcal${r.yields?' per batch':' per serving'} · ${c.can?'<span class="chip good">You have everything</span>':`<span class="chip bad">Missing ${c.missing.length}</span>`}</p>
+  <div class="grid2" style="margin:.4em 0"><div><label style="margin:0">Category</label><select data-act="set-rcat" data-id="${id}">${state.cats.map(c=>`<option ${rcat(r)===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div><label style="margin:0">Priority</label><select data-act="set-rtier" data-id="${id}">${[1,2,3].map(t=>`<option value="${t}" ${rtier(r)===t?'selected':''}>${RTIER[t]}</option>`).join('')}</select></div></div>
+  ${r.yields?'':rotationControls(r)}
   ${r.yields?`<div class="row" style="margin:.4em 0"><label style="margin:0">Batches</label><input type="number" min="1" value="${batches}" id="rBatches" data-act="batches" data-id="${id}" style="width:80px">${ys&&batchesNeeded(ys)?`<span class="tiny muted">${batchesNeeded(ys)} needed to reach target</span>`:''}</div>`:''}
   <div class="ing">${c.rows.map(x=>`<span class="${x.have||x.opt?'':'no'}">${x.s?x.s.e+' '+esc(x.s.n):esc(x.id)}${x.opt?' <span class="muted tiny">(optional)</span>':''}</span><span>${num(x.need,2)} ${x.s?x.s.unit:''}</span><span class="tiny ${x.have?'muted':'no'}">${x.have?'✓':x.opt?'—':'have '+num(x.on,2)}</span>`).join('')}</div>
   <h3 style="margin-top:.8em">Method</h3><p>${esc(r.steps)}</p>
   <div class="row" style="margin-top:1em"><button class="primary" data-act="cooked" data-id="${id}" data-b="${batches}" ${c.can?'':'disabled'}>${r.yields?'Made it — subtract ingredients, add to stock':'Cooked it — subtract ingredients'}</button>${c.missing.length?`<button data-act="want" data-id="${id}" data-b="${batches}">Add missing to shopping list</button>`:''}${r.custom?`<button data-act="recipe-edit" data-id="${id}">Edit</button><button class="danger" data-act="recipe-del" data-id="${id}">Delete</button>`:''}<button class="ghost" data-act="dlg-close">Close</button></div>`);}
+function rotationControls(r){const c=rcat(r),id=r.id,M=state.meals;
+  if(c==='Dinner mains')return `<label class="check"><input type="checkbox" data-act="meal" data-meal="dinner" data-role="mains" data-id="${id}" ${M.dinner.mains.includes(id)?'checked':''}>In my dinner rotation <span class="hint">(${M.dinner.count} dinners a week shared across ${M.dinner.mains.length||1} main${M.dinner.mains.length===1?'':'s'})</span></label>`;
+  if(c==='Lunches')return `<label class="check"><input type="checkbox" data-act="meal" data-meal="lunch" data-role="mains" data-id="${id}" ${M.lunch.mains.includes(id)?'checked':''}>In my lunch rotation <span class="hint">(${M.lunch.count} lunches a week)</span></label>`;
+  if(c==='Sides')return `<label class="check"><input type="checkbox" data-act="meal" data-meal="dinner" data-role="sides" data-id="${id}" ${M.dinner.sides.includes(id)?'checked':''}>Side with dinners</label><label class="check"><input type="checkbox" data-act="meal" data-meal="lunch" data-role="sides" data-id="${id}" ${M.lunch.sides.includes(id)?'checked':''}>Side with lunches</label>`;
+  return `<div class="row" style="margin:.4em 0"><label style="margin:0">In my rotation</label><input type="number" min="0" step="0.5" value="${num(Number(state.recipes[id])||0)}" data-act="freq" data-id="${id}" style="width:80px"><span class="tiny muted">times per week — this is what puts its ingredients on the shopping list</span></div>`;}
 function showCustomForm(id){const s=id?staple(id):null;
-  openDialog(`<div class="row between"><h2>${s?'Edit staple':'Add a staple'}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
+  openDialog(`<div class="row between"><h2>${s?'Edit ingredient':'Add an ingredient'}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
   <form id="cf" class="stack" onsubmit="return false"><input type="hidden" name="id" value="${s?s.id:''}">
   <div class="grid3"><div style="grid-column:1/3"><label>Name</label><input name="n" required value="${esc(s?.n||'')}"></div><div><label>Emoji</label><input name="e" value="${esc(s?.e||'🥫')}" maxlength="4"></div></div>
   <div class="grid2"><div><label>Category</label><select name="cat">${CATS.map(c=>`<option ${s?.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div><label>Stored in</label><select name="store"><option value="dry" ${s?.store==='dry'?'selected':''}>Dry shelves</option><option value="fridge" ${s?.store==='fridge'?'selected':''}>Fridge</option><option value="freezer" ${s?.store==='freezer'?'selected':''}>Freezer</option></select></div></div>
@@ -704,13 +736,13 @@ function saveCustom(){const f=$('#cf');if(!f.reportValidity())return;const fd=ne
 function stapleOptions(sel){return `<option value="" ${sel?'':'selected'}>— choose —</option>`+allStaples().slice().sort((a,b)=>a.n.localeCompare(b.n)).map(s=>`<option value="${s.id}" ${sel===s.id?'selected':''}>${esc(s.n)} (${s.unit})</option>`).join('')+`<option value="__new">+ New ingredient…</option>`;}
 function ingRowHTML(id,q,opt){return `<div class="ingrow row" style="flex-wrap:nowrap;margin:.3em 0"><select name="ing" style="flex:2;min-width:0">${stapleOptions(id)}</select><input name="qty" type="number" min="0" step="any" value="${q!=null?q:''}" placeholder="qty" style="width:80px"><label class="check tiny" style="margin:0"><input type="checkbox" name="opt" ${opt?'checked':''}>opt.</label><button class="tiny ghost" data-act="ing-del" aria-label="Remove">✕</button></div>`;}
 function addIngRow(){$('#ings').insertAdjacentHTML('beforeend',ingRowHTML(null,null,false));}
-function recipeDraft(){const f=$('#rf');if(!f)return null;const fd=new FormData(f);return {id:fd.get('id'),n:fd.get('n'),e:fd.get('e'),time:fd.get('time'),steps:fd.get('steps'),hasYield:fd.get('hasYield')==='on',yid:fd.get('yid'),yqty:fd.get('yqty'),rows:[...f.querySelectorAll('.ingrow')].map(rw=>[rw.querySelector('[name=ing]').value,rw.querySelector('[name=qty]').value,rw.querySelector('[name=opt]').checked])};}
-function showRecipeFormFromDraft(dr,newId){const r={id:dr.id,n:dr.n,e:dr.e,time:dr.time,steps:dr.steps,ings:dr.rows.map(([i,q,o])=>[i==='__new'?(newId||''):i,q===''?null:Number(q),o]),yields:dr.hasYield?{id:dr.yid,qty:Number(dr.yqty)||1}:null};showRecipeForm(null,null,r);}
+function recipeDraft(){const f=$('#rf');if(!f)return null;const fd=new FormData(f);return {id:fd.get('id'),n:fd.get('n'),e:fd.get('e'),cat:fd.get('cat'),tier:fd.get('tier'),time:fd.get('time'),steps:fd.get('steps'),hasYield:fd.get('hasYield')==='on',yid:fd.get('yid'),yqty:fd.get('yqty'),rows:[...f.querySelectorAll('.ingrow')].map(rw=>[rw.querySelector('[name=ing]').value,rw.querySelector('[name=qty]').value,rw.querySelector('[name=opt]').checked])};}
+function showRecipeFormFromDraft(dr,newId){const r={id:dr.id,n:dr.n,e:dr.e,cat:dr.cat,tier:Number(dr.tier)||2,time:dr.time,steps:dr.steps,ings:dr.rows.map(([i,q,o])=>[i==='__new'?(newId||''):i,q===''?null:Number(q),o]),yields:dr.hasYield?{id:dr.yid,qty:Number(dr.yqty)||1}:null};showRecipeForm(null,null,r);}
 function showRecipeForm(id,outId,draft){const r=draft||(id?recipe(id):null);const y=r?.yields||(outId?{id:outId,qty:1}:null);
   openDialog(`<div class="row between"><h2>${r?'Edit recipe':'Add a recipe'}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div>
   <form id="rf" class="stack" onsubmit="return false"><input type="hidden" name="id" value="${r?r.id:''}">
   <div class="grid3"><div style="grid-column:1/3"><label>Name</label><input name="n" required value="${esc(r?.n||'')}"></div><div><label>Emoji</label><input name="e" value="${esc(r?.e||'🍽️')}" maxlength="4"></div></div>
-  <label>Time (minutes)</label><input name="time" type="number" min="1" value="${r?.time||30}" style="max-width:160px">
+  <div class="grid3"><div><label>Category</label><select name="cat">${state.cats.map(c=>`<option ${(r?.cat||'Dinner mains')===c?'selected':''}>${esc(c)}</option>`).join('')}<option value="__newcat">+ New category…</option></select></div><div><label>Priority</label><select name="tier">${[1,2,3].map(t=>`<option value="${t}" ${(r?.tier||2)===t?'selected':''}>${RTIER[t]}</option>`).join('')}</select></div><div><label>Time (minutes)</label><input name="time" type="number" min="1" value="${r?.time||30}"></div></div>
   <label>Ingredients <span class="hint">(in each staple's unit. A meal is written for 4 servings and scaled to your household; a recipe that produces a stocked item is written per batch.)</span></label>
   <div id="ings">${(r?r.ings:[[null,null,false],[null,null,false],[null,null,false]]).map(([i,q,o])=>ingRowHTML(i,q,o)).join('')}</div>
   <button class="small" data-act="ing-add">+ ingredient</button>
@@ -723,9 +755,9 @@ function saveRecipe(){const f=$('#rf');if(!f.reportValidity())return;const fd=ne
   if(!rows.length){toast('Add at least one ingredient with a quantity.');return;}
   if([...f.querySelectorAll('.ingrow')].some(rw=>rw.querySelector('[name=ing]').value&&rw.querySelector('[name=ing]').value!=='__new'&&!(Number(rw.querySelector('[name=qty]').value)>0))){toast('Every chosen ingredient needs a quantity.');return;}
   const id=fd.get('id')||('recipe-'+Date.now());const hasY=fd.get('hasYield')==='on';
-  const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🍽️').trim()||'🍽️',time:Number(fd.get('time'))||30,ings:rows.map(([i,q,o])=>o?[i,q,true]:[i,q]),steps:fd.get('steps').trim(),tags:[],yields:hasY?{id:fd.get('yid'),qty:Number(fd.get('yqty'))||1}:null};
+  const rec={id,n:fd.get('n').trim(),e:(fd.get('e')||'🍽️').trim()||'🍽️',cat:fd.get('cat')==='__newcat'?'Dinner mains':fd.get('cat'),tier:Number(fd.get('tier'))||2,time:Number(fd.get('time'))||30,ings:rows.map(([i,q,o])=>o?[i,q,true]:[i,q]),steps:fd.get('steps').trim(),tags:[],yields:hasY?{id:fd.get('yid'),qty:Number(fd.get('yqty'))||1}:null};
   if(rec.yields){const s=staple(rec.yields.id);if(s&&!s.made){if(s.custom){s.made=true;}else{it(s.id).madeOverride=true;}}}
-  const i=state.customRecipes.findIndex(x=>x.id===id);if(i>=0)state.customRecipes[i]=rec;else{state.customRecipes.push(rec);if(!rec.yields)state.recipes[id]=1;}save();closeDialog();toast(rec.yields?`Saved ${rec.n}`:`Saved ${rec.n} — its ingredients are now on the shopping list`);render();}
+  const i=state.customRecipes.findIndex(x=>x.id===id);if(i>=0)state.customRecipes[i]=rec;else{state.customRecipes.push(rec);if(!rec.yields){if(rec.cat==='Dinner mains')state.meals.dinner.mains.push(id);else if(rec.cat==='Lunches')state.meals.lunch.mains.push(id);else if(rec.cat==='Sides')state.meals.dinner.sides.push(id);else state.recipes[id]=1;}}save();closeDialog();toast(rec.yields?`Saved ${rec.n}`:`Saved ${rec.n} — its ingredients are now on the shopping list`);render();}
 
 /* ============================================================ tutorial */
 const TOUR=[
@@ -733,9 +765,9 @@ const TOUR=[
  {sel:'[data-tab="stock"]',t:'Stock',b:'Every raw ingredient your recipes need, with a target for your weeks of stock. Type what you have on hand, or tap +pkg when you unpack groceries.'},
  {sel:'aside.panel',t:'Space and calories',b:'The gauges show how full your shelves, fridge and freezer would be at target, and the calorie line tells you whether the plan actually feeds the household.'},
  {sel:'[data-tab="shopping"]',t:'Shopping',b:'Whatever it takes to get back to target, in whole packages. Tick items as you buy them and stock updates. Items you make at home list their raw ingredients instead.'},
- {sel:'[data-tab="recipes"]',t:'Recipes',b:'What you can cook right now from what is on hand. Open a recipe to set how often you cook it — that is what puts its ingredients on the plan. Add your own with + Add a recipe.'},
+ {sel:'[data-tab="recipes"]',t:'Recipes',b:'What you can cook right now from what is on hand. Every recipe is measured for your household. Dinners and lunches come from the meal planner (Plan my meals); open a recipe to change its category, priority or rotation. Add your own with + Add a recipe.'},
  {sel:'[data-tab="alerts"]',t:'Alerts',b:'Out, running low, expiring, or over capacity — the things to act on this week.'},
- {sel:'[data-tab="settings"]',t:'Settings',b:'Change household, weeks, space, recipes, add staples, share with your household, and export a backup. Done!'},
+ {sel:'[data-tab="settings"]',t:'Settings',b:'Change household, weeks, space, plan meals, add ingredients, share with your household, and export a backup. Done!'},
 ];
 let tourI=-1;
 function startTour(){tourI=0;showTour();}
@@ -764,7 +796,7 @@ async function pullState(manual){if(!syncReady())return;try{
   if(!rows.length){await pushState();return;}
   const remote=rows[0].doc;if(!remote||!remote.items)throw new Error('Unexpected data in the household row');
   const adopt=!sync.last||!state.rev||(remote.rev&&remote.rev>state.rev); // a device that has never synced takes the household copy
-  if(adopt){const wasSetup=state.setup;state=Object.assign(fresh(),remote);state.items=state.items||{};state.wanted=state.wanted||{};state.customStaples=state.customStaples||[];state.customRecipes=state.customRecipes||[];saveLocalOnly();sync.last=Date.now();setStatus('Updated from household '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),true);render();if(manual||wasSetup)toast('Updated from your household');}
+  if(adopt){const wasSetup=state.setup;state=Object.assign(fresh(),remote);state.items=state.items||{};state.wanted=state.wanted||{};state.customStaples=state.customStaples||[];state.customRecipes=state.customRecipes||[];state.cats=state.cats||DEFAULT_CATS.slice();state.rcat=state.rcat||{};state.rtier=state.rtier||{};state.meals=state.meals||{dinner:{count:7,mains:[],sides:[]},lunch:{count:5,mains:[],sides:[]}};saveLocalOnly();sync.last=Date.now();setStatus('Updated from household '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),true);render();if(manual||wasSetup)toast('Updated from your household');}
   else if(remote.rev&&remote.rev<state.rev){await pushState();}
   else{sync.last=Date.now();setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),true);}
 }catch(e){setStatus('Sync failed: '+e.message,false);if(manual)toast('Sync failed — see Settings');}}
@@ -796,8 +828,9 @@ function renderSyncSettings(){return `<p class="tiny muted">Two phones (or a pho
   <div class="row"><button class="primary" data-act="sync-save">Save sync settings</button><button data-act="sync-now" ${syncReady()?'':'disabled'}>Sync now</button><span id="syncStatus" class="tiny" style="color:${sync.ok===false?'var(--alert)':'var(--muted)'}">${esc(sync.status||(sync.enabled?'':'Not shared — this browser only'))}</span></div>`;}
 
 /* ============================================================ wizard */
-function wrCountText(){const n=Object.values(state.recipes).filter(v=>v>0).length;const meals=Object.values(state.recipes).reduce((a,v)=>a+(Number(v)||0),0);return `${n} recipes · ${num(meals)} meals a week`;}
-function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cooking','Recipes'];let body='';const sp=state.space,p=state.prefs;
+function mealCountText(){const M=state.meals;const extras=Object.values(state.recipes).filter(v=>v>0).length;return `${M.dinner.count} dinners from ${M.dinner.mains.length} main${M.dinner.mains.length===1?'':'s'} + ${M.dinner.sides.length} side${M.dinner.sides.length===1?'':'s'} · ${M.lunch.count} lunches from ${M.lunch.mains.length} + ${M.lunch.sides.length} · ${extras} extra${extras===1?'':'s'}`;}
+function recipeRow(r,control){return `<div class="wr row" style="flex-wrap:nowrap;padding:.35em .2em;border-bottom:1px solid var(--line)">${control}<span style="font-size:1.2rem">${r.e}</span><span style="flex:1;min-width:0"><b>${esc(r.n)}</b>${r.custom?' <span class="chip">custom</span>':''}${rtier(r)===1?' <span class="chip ok">essential</span>':rtier(r)===3?' <span class="chip">nice to have</span>':''} <span class="tiny muted">${r.time} min · ~${Math.round(recipeKcal(r))} kcal/serving</span></span><button class="tiny ghost" data-act="recipe" data-id="${r.id}">info</button></div>`;}
+function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cooking','Meals'];let body='';const sp=state.space,p=state.prefs;
   if(st===0)body=`<h2>Who are you feeding, and for how long?</h2><p class="help">Kids count as 0.6 of an adult. "Weeks of stock" is how long you want to be able to cook without a grocery run — 2–4 weeks is a well-stocked kitchen, 8–12 is hurricane-season territory.</p>
     <div class="grid3" style="max-width:520px"><div><label>Adults</label><input type="number" id="wAdults" min="1" max="20" value="${state.adults}"></div><div><label>Kids</label><input type="number" id="wKids" min="0" max="20" value="${state.kids}"></div><div><label>Weeks of stock</label><input type="number" id="wWeeks" min="1" max="26" value="${state.weeks}"></div></div>
     <label style="max-width:520px">Pantry name</label><input id="wName" value="${esc(state.name)}" style="max-width:520px">
@@ -806,7 +839,7 @@ function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cookin
     <div class="grid3" style="max-width:640px"><div><label>Number of shelves</label><input type="number" id="wShelves" min="0" value="${sp.shelves}"></div><div><label>Shelf width (in)</label><input type="number" id="wW" min="0" value="${sp.w}"></div><div><label>Shelf depth (in)</label><input type="number" id="wD" min="0" value="${sp.d}"></div></div>
     <div class="grid3" style="max-width:640px"><div><label>Clearance between shelves (in)</label><input type="number" id="wH" min="0" value="${sp.h}"></div><div><label>Fridge (cu ft)</label><input type="number" id="wFridge" min="0" value="${sp.fridge}"></div><div><label>Freezer (cu ft)</label><input type="number" id="wFreezer" min="0" value="${sp.freezer}"></div></div>
     <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-next">Continue</button></div>`;
-  if(st===2)body=`<h2>How do you cook?</h2><p class="help">This decides which staples go in the plan. You can add or remove any single item later.</p>
+  if(st===2)body=`<h2>How do you cook?</h2><p class="help">This decides which ingredients go in the plan. You can add or remove any single item later.</p>
     <label class="check"><input type="checkbox" id="wFridgeOn" ${p.fridge?'checked':''}>Include fridge items <span class="hint">(eggs, butter, cheese, milk)</span></label>
     <label class="check"><input type="checkbox" id="wFreezerOn" ${p.freezer?'checked':''}>Include freezer items <span class="hint">(meat, frozen vegetables, bread)</span></label>
     <label class="check"><input type="checkbox" id="wVeg" ${p.veg?'checked':''}>Vegetarian</label>
@@ -814,13 +847,22 @@ function renderWizard(){const st=ui.wiz;const steps=['Household','Space','Cookin
     <label class="check"><input type="checkbox" id="wBake" ${p.bake?'checked':''}>I bake bread at home</label>
     <label class="check"><input type="checkbox" id="wWater" ${p.water?'checked':''}>Stock emergency drinking water <span class="hint">(1 gal per person per day)</span></label>
     <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-next">Continue</button></div>`;
-  if(st===3){const q=(ui.wq||'').toLowerCase();const list=allRecipes().filter(r=>!r.yields&&r.g!=='shelf'&&(!q||r.n.toLowerCase().includes(q)));const groups=['meals','light','breakfast','sides','sweets'];
-    body=`<h2>What do you actually cook?</h2><p class="help">Tick the recipes in your regular rotation and say roughly how many times a week you make each. <b>This is what decides your shopping list</b> — only the raw ingredients these recipes need get stocked (plus anything you later mark "always keep stocked", like coffee). We pre-ticked 15 common ones; change anything.</p>
-    <div class="row between"><input placeholder="Search recipes" value="${esc(ui.wq||'')}" data-act="wq" style="max-width:280px"><span class="tiny muted" id="wrCount">${wrCountText()}</span><button class="small" data-act="recipe-new">+ Add my own recipe</button></div>
-    ${groups.map(g=>{const rs=list.filter(r=>r.g===g);if(!rs.length)return '';return `<h3 style="margin-top:1em">${GROUP_LABEL[g]}</h3>${rs.map(r=>`<label class="wr row" style="padding:.35em .2em;border-bottom:1px solid var(--line);margin:0;font-weight:400;cursor:pointer"><input type="checkbox" data-act="wr" data-id="${r.id}" ${freq(r.id)>0?'checked':''} style="width:auto"><span style="font-size:1.2rem">${r.e}</span><span style="flex:1"><b>${esc(r.n)}</b>${r.custom?' <span class="chip">custom</span>':''} <span class="tiny muted">${r.time} min · ~${Math.round(recipeKcal(r))} kcal</span></span><input type="number" min="0" step="0.5" value="${num(freq(r.id))}" data-act="wr" data-id="${r.id}" style="width:64px" aria-label="times per week"><span class="tiny muted">×/wk</span></label>`).join('')}`;}).join('')}
+  if(st===3){const q=(ui.wq||'').toLowerCase();const all=allRecipes().filter(r=>!r.yields&&(!q||r.n.toLowerCase().includes(q)));const by=c=>all.filter(r=>rcat(r)===c).sort((x,y)=>rtier(x)-rtier(y)||x.n.localeCompare(y.n));const M=state.meals;
+    const cb=(meal,role,id,checked)=>`<input type="checkbox" data-act="meal" data-meal="${meal}" data-role="${role}" data-id="${id}" ${checked?'checked':''} style="width:auto">`;
+    const extraCats=state.cats.filter(c=>!['Dinner mains','Lunches','Sides'].includes(c));
+    body=`<h2>Plan your meals</h2><p class="help">Every recipe is measured to serve <b>${householdLabel()}</b>. Say how many dinners and lunches you cook at home each week, then pick the main courses and sides you rotate through — the app spreads them evenly across the week, and <b>those ingredients become your shopping list</b>. Essentials are listed first.</p>
+    <div class="row between" style="position:sticky;top:0;background:var(--bg);padding:.4em 0;z-index:2"><input placeholder="Search recipes" value="${esc(ui.wq||'')}" data-act="wq" style="max-width:260px"><span class="tiny muted" id="mealCount">${mealCountText()}</span><button class="small" data-act="recipe-new">+ Add my own recipe</button></div>
+    <h3 style="margin-top:1em">Dinner <span class="muted" style="font-weight:400;font-size:.9rem">— at home</span> <input type="number" min="0" max="21" value="${M.dinner.count}" data-act="meal-count" data-meal="dinner" style="width:64px;display:inline-block;margin:0 .3em"> <span class="tiny muted">nights a week</span></h3>
+    <h4 style="margin:.6em 0 .2em;color:var(--muted)">Main courses</h4>${by('Dinner mains').map(r=>recipeRow(r,cb('dinner','mains',r.id,M.dinner.mains.includes(r.id)))).join('')||'<p class="tiny muted">No dinner mains yet.</p>'}
+    <h4 style="margin:.9em 0 .2em;color:var(--muted)">Sides with dinner</h4>${by('Sides').map(r=>recipeRow(r,cb('dinner','sides',r.id,M.dinner.sides.includes(r.id)))).join('')}
+    <h3 style="margin-top:1.4em">Lunch <span class="muted" style="font-weight:400;font-size:.9rem">— at home</span> <input type="number" min="0" max="21" value="${M.lunch.count}" data-act="meal-count" data-meal="lunch" style="width:64px;display:inline-block;margin:0 .3em"> <span class="tiny muted">days a week</span></h3>
+    <h4 style="margin:.6em 0 .2em;color:var(--muted)">Main courses</h4>${by('Lunches').map(r=>recipeRow(r,cb('lunch','mains',r.id,M.lunch.mains.includes(r.id)))).join('')}
+    <h4 style="margin:.9em 0 .2em;color:var(--muted)">Sides with lunch</h4>${by('Sides').map(r=>recipeRow(r,cb('lunch','sides',r.id,M.lunch.sides.includes(r.id)))).join('')}
+    <h3 style="margin-top:1.4em">Also in rotation <span class="muted" style="font-weight:400;font-size:.9rem">— times per week</span></h3>
+    ${extraCats.map(c=>{const rs=by(c);if(!rs.length)return '';return `<h4 style="margin:.6em 0 .2em;color:var(--muted)">${esc(c)}</h4>${rs.map(r=>recipeRow(r,`<input type="number" min="0" step="0.5" value="${num(Number(state.recipes[r.id])||0)}" data-act="wr" data-id="${r.id}" style="width:60px" aria-label="times per week">`)).join('')}`;}).join('')}
     <div class="row" style="margin-top:1.5em"><button class="ghost" data-act="wiz-back">Back</button><button class="primary" data-act="wiz-finish">Build my stock plan</button></div>`;}
-  $('#app').innerHTML=`<div class="wizard"><div class="hero"><div><h1>Shelf &amp; Weeks</h1><p>Tell it how many people, how many weeks and how much shelf space, and it works out the raw staples to keep, fits them to the space, tracks what is on hand, and shows what you can cook tonight.</p></div>
-    <div class="card" style="background:var(--panel)"><b>${STAPLES.length} staples, ${RECIPES.length} recipes</b> — plus your own<p class="tiny muted" style="margin:.3em 0 0">Grains, legumes, cans, oils, baking, spices, long-keeping produce, fridge and freezer basics — every recipe uses only what is on the list.</p></div></div>
+  $('#app').innerHTML=`<div class="wizard"><div class="hero"><div><h1>Shelf &amp; Weeks</h1><p>Tell it how many people, how many weeks and how much shelf space, and it works out the raw ingredients to keep, fits them to the space, tracks what is on hand, and shows what you can cook tonight.</p></div>
+    <div class="card" style="background:var(--panel)"><b>${STAPLES.length} ingredients, ${RECIPES.length} recipes</b> — plus your own<p class="tiny muted" style="margin:.3em 0 0">Grains, legumes, cans, oils, baking, spices, long-keeping produce, fridge and freezer basics — every recipe uses only what is on the list.</p></div></div>
     <div class="steps">${steps.map((s,i)=>`<span class="${i===st?'on':i<st?'done':''}">${i+1}. ${s}</span>`).join('')}</div>${body}</div>`;}
 
 /* ============================================================ actions */
@@ -840,6 +882,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
     case 'cooked':{const r=recipe(id);const b=Number(el.dataset.b)||1;const c=recipeCheck(r,b);c.rows.forEach(x=>{if(x.s&&x.have)it(x.id).on=Math.max(0,(it(x.id).on||0)-x.need);});
       if(r.yields&&staple(r.yields.id)){it(r.yields.id).on=(it(r.yields.id).on||0)+r.yields.qty*b;}
       save();closeDialog();toast(r.yields?`${num(r.yields.qty*b)} ${staple(r.yields.id)?.unit||''} of ${staple(r.yields.id)?.n||r.yields.id} added to stock`:`Enjoy the ${r.n.toLowerCase()} — ingredients subtracted`);render();break;}
+    case 'drop-recipe':{delete state.recipes[id];['dinner','lunch'].forEach(m=>{['mains','sides'].forEach(role=>mealToggle(m,role,id,false));});save();render();toast('Dropped from rotation');break;}
     case 'basic-on':it(id).basic=true;save();render();toast('Added to the plan as a basic');break;
     case 'make-toggle':{const o=it(id);o.make=!o.make;save();render();toast(o.make?'Making it at home — raw ingredients go on the shopping list':'Buying it');break;}
     case 'batches':break;
@@ -855,17 +898,22 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
     case 'custom-new':showCustomForm(null);break;
     case 'custom-edit':showCustomForm(id);break;
     case 'custom-save':saveCustom();break;
-    case 'custom-del':{if(!confirm('Delete this staple?'))return;state.customStaples=state.customStaples.filter(c=>c.id!==id);delete state.items[id];save();closeDialog();render();break;}
+    case 'custom-del':{if(!confirm('Delete this ingredient?'))return;state.customStaples=state.customStaples.filter(c=>c.id!==id);delete state.items[id];save();closeDialog();render();break;}
     case 'wiz-next':{if(ui.wiz===0){state.adults=Math.max(1,Number($('#wAdults').value)||2);state.kids=Math.max(0,Number($('#wKids').value)||0);state.weeks=Math.max(1,Math.min(26,Number($('#wWeeks').value)||4));state.name=$('#wName').value.trim()||'Home pantry';}
       if(ui.wiz===1){state.space={shelves:+$('#wShelves').value||0,w:+$('#wW').value||0,d:+$('#wD').value||0,h:+$('#wH').value||12,fridge:+$('#wFridge').value||0,freezer:+$('#wFreezer').value||0};}
       if(ui.wiz===2){state.prefs={fridge:$('#wFridgeOn').checked,freezer:$('#wFreezerOn').checked,veg:$('#wVeg').checked,gf:$('#wGf').checked,bake:$('#wBake').checked,water:$('#wWater').checked};
-        if(!Object.keys(state.recipes).length&&!state._legacy){STARTER.forEach(id=>{const r=recipe(id);if(r&&recipeCheck(r).fits)state.recipes[id]=1;});['salt','pepper','oil','sugar','coffee'].forEach(id=>it(id).basic=true);if(state.prefs.water)it('water').basic=true;}}
+        if(!state._starterDone&&!state._legacy){state._starterDone=true;const ok=id=>{const r=recipe(id);return r&&recipeCheck(r).fits;};
+          if(!state.meals.dinner.mains.length)state.meals.dinner.mains=STARTER_DINNERS.filter(ok); if(!state.meals.dinner.sides.length)state.meals.dinner.sides=STARTER_SIDES.filter(ok); if(!state.meals.lunch.mains.length)state.meals.lunch.mains=STARTER_LUNCHES.filter(ok);
+          if(!Object.keys(state.recipes).length)Object.entries(STARTER_EXTRAS).forEach(([id,f])=>{if(ok(id))state.recipes[id]=f;});
+          ['salt','pepper','oil','sugar','coffee'].forEach(id=>it(id).basic=true);}}
       ui.wiz++;save();renderWizard();break;}
     case 'wiz-back':ui.wiz=Math.max(0,ui.wiz-1);renderWizard();break;
     case 'wiz-finish':{state.setup=true;ui.wiz=0;delete state._legacy;save();render();if(state.settings.tutorial!==false)startTour();break;}
     case 'rerun':state.setup=false;ui.wiz=0;save();renderWizard();break;
-    case 'choose-recipes':state.setup=false;ui.wiz=3;save();renderWizard();break;
+    case 'choose-recipes':case 'plan-meals':state.setup=false;ui.wiz=3;save();renderWizard();break;
     case 'sync-gen':$('#syCode').value=genCode();break;
+    case 'cat-add':{const v=$('#newCat').value.trim();if(v&&!state.cats.includes(v)){state.cats.push(v);save();render();}break;}
+    case 'cat-del':{state.cats=state.cats.filter(c=>c!==el.dataset.cat);save();render();break;}
     case 'tour-next':tourI++;showTour();break;
     case 'tour-prev':tourI--;showTour();break;
     case 'tour-skip':tourI=-1;showTour();break;
@@ -875,13 +923,19 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
     case 'sync-now':pullState(true);break;
     case 'export':{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`pantry-backup-${iso(today())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);break;}
     case 'import':$('#importFile').click();break;
-    case 'reset':if(confirm('Delete the plan, on-hand counts and custom staples?')){state=fresh();save();render();}break;
+    case 'reset':if(confirm('Delete the plan, on-hand counts and custom ingredients?')){state=fresh();save();render();}break;
   }});
 document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.act==='batches'){showRecipe(el.dataset.id,el.value);return;}
+  if(el.dataset.act==='set-rcat'){const r=recipe(el.dataset.id);if(r.custom){r.cat=el.value;}else state.rcat[r.id]=el.value;save();showRecipe(r.id);return;}
+  if(el.dataset.act==='set-rtier'){const r=recipe(el.dataset.id);if(r.custom){r.tier=Number(el.value);}else state.rtier[r.id]=Number(el.value);save();return;}
+  if(el.dataset.act==='meal'){mealToggle(el.dataset.meal,el.dataset.role,el.dataset.id,el.checked);save();if(!state.setup){const c=$('#mealCount');if(c)c.textContent=mealCountText();}else{const p=$('aside.panel');if(p)p.innerHTML=renderSide(alerts());}return;}
+  if(el.dataset.act==='meal-count'){state.meals[el.dataset.meal].count=Math.max(0,Math.min(21,Number(el.value)||0));save();const c=$('#mealCount');if(c)c.textContent=mealCountText();return;}
+  if(el.dataset.act==='rcat-filter'){ui.rcat=el.value;render();return;}
   if(el.dataset.act==='freq'){const v=Math.max(0,Number(el.value)||0);if(v)state.recipes[el.dataset.id]=v;else delete state.recipes[el.dataset.id];save();$('aside.panel').innerHTML=renderSide(alerts());return;}
-  if(el.dataset.act==='wr'){const id=el.dataset.id;if(el.type==='checkbox'){if(el.checked)state.recipes[id]=state.recipes[id]>0?state.recipes[id]:1;else delete state.recipes[id];}else{const v=Math.max(0,Number(el.value)||0);if(v)state.recipes[id]=v;else delete state.recipes[id];}save();const row=el.closest('.wr');if(row){const f=row.querySelector('input[type=number]');if(f)f.value=num(freq(id));row.querySelector('input[type=checkbox]').checked=freq(id)>0;}const c=$('#wrCount');if(c)c.textContent=wrCountText();return;}
+  if(el.dataset.act==='wr'){const id=el.dataset.id;const v=Math.max(0,Number(el.value)||0);if(v)state.recipes[id]=v;else delete state.recipes[id];save();const c=$('#mealCount');if(c)c.textContent=mealCountText();return;}
   if(el.name==='hasYield'){$('#yieldBox').style.display=el.checked?'':'none';return;}
+  if(el.name==='cat'&&el.value==='__newcat'){const name=(prompt('Name the new category (e.g. Soups, Drinks, Baby food):')||'').trim();if(name&&!state.cats.includes(name)){state.cats.push(name);save();}el.innerHTML=state.cats.map(c=>`<option ${c===(name||'Dinner mains')?'selected':''}>${esc(c)}</option>`).join('')+'<option value="__newcat">+ New category…</option>';return;}
   if(el.name==='ing'&&el.value==='__new'){ui.recipeDraft=recipeDraft();showCustomForm(null);toast('Save the new ingredient and you will be returned to the recipe');return;}
   if(el.dataset.act==='on'){it(el.dataset.id).on=Math.max(0,Number(el.value)||0);save();render();return;}
   if(el.dataset.act==='bought'){const s=staple(el.dataset.id);if(el.checked){it(s.id).on=(it(s.id).on||0)+Number(el.dataset.n)*s.pkg;delete state.wanted[s.id];save();toast(`${s.n} restocked`);setTimeout(render,250);}return;}
@@ -895,8 +949,9 @@ document.addEventListener('input',e=>{const el=e.target;if(el.dataset.act==='wq'
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.act==='on')e.target.blur();});
 dlg().addEventListener('click',e=>{if(e.target===dlg())closeDialog();});
 
-state=load();render();startSyncLoop();
+state=load();migrateMeals();waterTick();render();startSyncLoop();
 </script>
 </body>
 </html>
+
 
