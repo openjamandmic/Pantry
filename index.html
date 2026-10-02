@@ -475,8 +475,8 @@ const STARTER_EXTRAS={'pancakes':1,'oatmeal':3,'scrambled-toast':2,'popcorn':1};
 </script>
 <script>
 /* ============================================================ CONFIG — fill these in once from your Supabase project (Settings → API) */
-const SUPABASE_URL = '';          // e.g. 'https://abcdefgh.supabase.co'
-const SUPABASE_ANON_KEY = '';     // the anon / public key (safe to publish)
+const SUPABASE_URL = 'https://keibsoxmuosemhgrsksv.supabase.co';          // e.g. 'https://abcdefgh.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlaWJzb3htdW9zZW1oZ3Jza3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MDUyOTEsImV4cCI6MjEwNjM4MTI5MX0.15TRm-ZV1553AKJNb_wua6HJPdJiMVknaLN1BE87-54';     // the anon / public key (safe to publish)
 const SETUP_SQL = `create table if not exists pantries (
   user_id uuid primary key references auth.users(id) on delete cascade,
   doc jsonb not null,
