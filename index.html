@@ -615,7 +615,7 @@ function render(){const th=state?.settings?.theme||'auto';if(th==='auto')documen
   if(!VIEWS.some(v=>v[0]===ui.view))ui.view='home';
   const al=alerts();const urgent=al.filter(a=>a.type!=='exp').length;const shop=shopping();const sd=isShopDay();
   const badge=v=>v==='shop'&&sd&&shop.length?`<span class="n">${shop.length}</span>`:v==='more'&&urgent?`<span class="n">${urgent}</span>`:'';
-  $('#app').innerHTML=`<header class="topbar"><div class="brand"><i>🥫</i>${esc(state.name)}</div><nav>${VIEWS.map(([k,l])=>`<button data-act="view" data-view="${k}" class="${ui.view===k?'active':''}">${l}${badge(k)}</button>`).join('')}</nav><div class="spacer"></div><span class="tiny muted">${deviceOnly()?'This device only':esc(session.username||'')}</span></header>
+  $('#app').innerHTML=`<header class="topbar"><div class="brand"><i>🥫</i>${esc(state.name)}</div><nav>${VIEWS.map(([k,l])=>`<button data-act="view" data-view="${k}" class="${ui.view===k?'active':''}">${l}${badge(k)}</button>`).join('')}</nav><div class="spacer"></div>${deviceOnly()?(hasBackend()?`<button class="small soft" data-act="logout">Log in / create account</button>`:`<span class="tiny muted">This device only</span>`):`<span class="tiny muted">${esc(session.username||'')}</span>`}</header>
   <main class="view" id="view">${renderView(al,shop)}</main>
   <nav class="bottomnav">${VIEWS.map(([k,l,e])=>`<button data-act="view" data-view="${k}" class="${ui.view===k?'active':''}"><span class="ic">${e}</span>${l}${badge(k)}</button>`).join('')}</nav>`;
   if(!storageOK)toast('Browser storage is unavailable — your account copy is what saves you.');}
@@ -636,7 +636,7 @@ async function doAuth(kind){const u=$('#auUser').value.trim().toLowerCase(),p=$(
   if(!validUser(u)){err.textContent='Username: 3–31 characters, letters, numbers, dot, dash or underscore.';return;}if(p.length<6){err.textContent='Password needs at least 6 characters.';return;}
   if(kind==='signup'&&p!==$('#auPass2').value){err.textContent='Passwords do not match.';return;}
   $('#auBtn').disabled=true;try{if(kind==='signup')await signUp(u,p);else await signIn(u,p);await afterLogin();}catch(e){err.textContent=e.message;$('#auBtn').disabled=false;}}
-async function afterLogin(){state=loadLocal();await pullState(true);if(state._fromLegacy){delete state._fromLegacy;save();}waterTick();startSync();ui.view='home';render();}
+async function afterLogin(){state=loadLocal();if(ui.carry&&!state.setup&&!Object.keys(state.items).length){state=normalize(ui.carry);saveLocalOnly();}ui.carry=null;await pullState(true);if(state._fromLegacy){delete state._fromLegacy;save();}waterTick();startSync();ui.view='home';render();}
 
 /* ============================================================ onboarding */
 const OB=['Household','Storage','Your week','Cooking','Meals','Check in'];
@@ -871,7 +871,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
     case 'auth-mode':ui.auth=el.dataset.mode;render();break;
     case 'do-signup':doAuth('signup');break;case 'do-login':doAuth('login');break;
     case 'device-only':saveSession({uid:'local',username:'',expires_at:Infinity});afterLogin();break;
-    case 'logout':if(confirm(deviceOnly()?'Go to the account screen? Your device-only pantry stays on this phone and can be exported from More.':'Log out of this device? Your pantry stays safe in your account.')){signOut();}break;
+    case 'logout':if(deviceOnly()){ui.carry=state;signOut();toast('Create an account or log in — your pantry comes with you');}else if(confirm('Log out of this device? Your pantry stays safe in your account.')){signOut();}break;
     case 'copy-sql':(navigator.clipboard?navigator.clipboard.writeText(SETUP_SQL):Promise.reject()).then(()=>toast('SQL copied')).catch(()=>toast('Select the text and copy it'));break;
     case 'ob-next':obNext();break;case 'ob-back':ui.ob=Math.max(0,ui.ob-1);render();break;
     case 'rerun':state.setup=false;ui.ob=0;save();render();break;
@@ -937,6 +937,5 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
-
 
 
