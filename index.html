@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Shelf &amp; Weeks — Home Pantry</title>
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -607,7 +608,15 @@ async function pullState(first){if(!session||deviceOnly()||!hasBackend())return;
   if(first||!state.rev||(remote.rev&&remote.rev>state.rev)){const same=state&&state.rev===remote.rev;state=normalize(remote);saveLocalOnly();syncStatus={ok:true,text:'Up to date'};if(!same){render();if(!first)toast('Updated from your account');}}
   else if(remote.rev&&remote.rev<state.rev)await pushState();}catch(e){syncStatus={ok:false,text:'Sync: '+e.message};}}
 function startSync(){clearInterval(pullTimer);if(deviceOnly()||!hasBackend())return;pullTimer=setInterval(()=>{if(document.visibilityState==='visible')pullState(false);},45000);}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state)pullState(false);});
+/* Fresh copy on every open. iOS freezes home-screen apps and Safari tabs instead of closing them,
+   so tapping the icon resumes the old page. If we were away a while, fetch the latest file from the
+   server (bypassing the browser cache) and reload — unless something is mid-edit. */
+const RELOAD_AFTER_MS=60*1000;let _hiddenAt=null;
+function busyEditing(){return (dlg&&dlg().open)||document.getElementById('tour')||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)&&document.activeElement.closest('form'));}
+async function freshReload(){try{await fetch(location.href.split('#')[0],{cache:'reload'});}catch(e){}location.reload();}
+function onResume(){const away=_hiddenAt?Date.now()-_hiddenAt:0;_hiddenAt=null;if(away>=RELOAD_AFTER_MS&&navigator.onLine!==false&&!busyEditing()){freshReload();return true;}return false;}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){_hiddenAt=Date.now();return;}if(onResume())return;if(state)pullState(false);});
+window.addEventListener('pageshow',e=>{if(e.persisted){if(!_hiddenAt)_hiddenAt=Date.now()-RELOAD_AFTER_MS;onResume();}});
 
 /* ============================================================ ingredients & recipes */
 function allStaples(){return STAPLES.concat(state.customStaples.map(c=>Object.assign({},c,{custom:true})));}
@@ -1268,9 +1277,3 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
-
-
-
-
-
-
