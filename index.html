@@ -148,16 +148,21 @@ dialog::backdrop{background:rgba(20,28,22,.45)} dialog .dbody{padding:1.2em; ove
 .ing{display:grid; grid-template-columns:1fr auto auto; gap:.3em .8em; font-size:.92rem; align-items:center} .ing .no{color:var(--red)}
 .spick{position:relative} .spick-list{position:absolute; left:0; right:0; top:calc(100% + 2px); z-index:20; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); max-height:230px; overflow:auto} .spick-list[hidden]{display:none}
 .spick-item{display:flex; align-items:center; gap:.5em; width:100%; text-align:left; padding:.5em .7em; background:none; border:0; border-bottom:1px solid var(--line); border-radius:0; font-size:.92rem} .spick-item:last-child{border-bottom:0} .spick-item:hover,.spick-item:focus{background:var(--soft,rgba(0,0,0,.04))} .spick-item.new{color:var(--green-deep); font-weight:700} .spick-item .u{margin-left:auto; opacity:.6; font-size:.8rem}
-.tour-spot{position:relative; z-index:2; border-radius:12px !important; background:var(--bg) !important; color:var(--green-deep) !important; box-shadow:0 0 0 3px var(--amber),0 0 0 6px var(--bg),0 0 0 200vmax rgba(20,28,22,.55) !important}
-body.touring .topbar,body.touring .bottomnav{z-index:101}
-#tour{position:fixed; inset:0; z-index:102; display:flex; align-items:center; justify-content:center; pointer-events:none;
-  padding:calc(4.5em + env(safe-area-inset-top,0px)) 1em calc(6em + env(safe-area-inset-bottom,0px))}
-#tour.scrim{background:rgba(20,28,22,.55)}
-.tour-card{pointer-events:auto; background:var(--panel); border-radius:22px; box-shadow:0 20px 60px rgba(0,0,0,.35); padding:1.4em 1.4em 1.3em; width:100%; max-width:560px}
-.tour-ic{flex:none; width:64px; height:64px; border-radius:20px; background:var(--green-soft); display:grid; place-items:center; font-size:2.2rem}
-.tour-card h2{font-size:clamp(1.6rem,6vw,2rem); margin:0}
-.tour-card p{font-size:clamp(1.12rem,4.3vw,1.3rem); line-height:1.5; color:var(--ink); margin:.8em 0 1em}
-.tour-dots{display:flex; gap:.45em; justify-content:center} .tour-dots span{width:9px; height:9px; border-radius:50%; background:var(--line)} .tour-dots span.on{background:var(--green); width:24px; border-radius:99px}
+.tour-spot{}
+body.touring dialog[open]{position:fixed; inset:auto; top:calc(.6em + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%); margin:0; z-index:101; max-height:50vh; width:min(600px,94vw)}
+body.touring dialog[open] .dbody{max-height:50vh}
+#tourBlock{position:fixed; inset:0; z-index:102; background:transparent; touch-action:none}
+#tourRing{position:fixed; z-index:103; border-radius:12px; pointer-events:none; box-shadow:0 0 0 3px var(--amber),0 0 0 7px rgba(255,255,255,.35),0 0 0 9999px rgba(20,28,22,.58); transition:top .25s,left .25s,width .25s,height .25s}
+#tourRing.none{top:50%!important; left:50%!important; width:0!important; height:0!important; box-shadow:0 0 0 9999px rgba(20,28,22,.58)}
+#tour{position:fixed; left:0; right:0; z-index:104; display:flex; justify-content:center; padding:0 .7em; pointer-events:none}
+#tour.bot{bottom:calc(.7em + env(safe-area-inset-bottom,0px))} #tour.top{top:calc(.7em + env(safe-area-inset-top,0px))} #tour.mid{top:50%; transform:translateY(-50%)}
+.tour-card{pointer-events:auto; background:var(--panel); border-radius:18px; box-shadow:0 18px 50px rgba(0,0,0,.4); padding:1em 1.1em; width:100%; max-width:540px; max-height:42vh; overflow:auto}
+.tour-ic{flex:none; width:44px; height:44px; border-radius:14px; background:var(--green-soft); display:grid; place-items:center; font-size:1.5rem}
+.tour-card h2{font-size:1.25rem; margin:0}
+.tour-card p{font-size:1.02rem; line-height:1.45; color:var(--ink); margin:.6em 0 .8em}
+.tour-prog{height:5px; border-radius:99px; background:var(--line); overflow:hidden} .tour-prog i{display:block; height:100%; background:var(--green); border-radius:99px; transition:width .25s}
+.tour-sec{font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--green-deep)}
+#tour.mid .tour-card{max-height:80vh}
 button.big{padding:.85em 1.4em; font-size:1.1rem; border-radius:14px}
 .addtiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:.7em; margin-top:.7em}
 .addtile{display:flex; flex-direction:column; align-items:flex-start; gap:.3em; text-align:left; padding:1em 1.1em; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:var(--shadow)}
@@ -599,11 +604,11 @@ function loadLocal(){try{const r=localStorage.getItem(uidKey());if(r)return norm
   try{const legacy=localStorage.getItem('shelfAndWeeks.v1');if(legacy){const s=normalize(JSON.parse(legacy));s._fromLegacy=true;return s;}}catch(e){} return fresh();}
 function postClean(){if(state&&state._cleaned){delete state._cleaned;save();toast('Removed the starter recipes an earlier version picked for you — your recipe list is yours to build');}}
 function saveLocalOnly(){try{localStorage.setItem(uidKey(),JSON.stringify(state));}catch(e){storageOK=false;}}
-function save(){_demand=null;state.rev=new Date().toISOString();saveLocalOnly();if(!deviceOnly())schedulePush();}
+function save(){_demand=null;if(tourSnap)return;state.rev=new Date().toISOString();saveLocalOnly();if(!deviceOnly())schedulePush();}
 function schedulePush(){clearTimeout(pushTimer);pushTimer=setTimeout(pushState,1200);}
 async function pushState(){if(!session||deviceOnly()||!hasBackend())return;try{const r=await authFetch('/rest/v1/pantries?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:session.uid,doc:state,updated_at:new Date().toISOString()})});
   if(!r.ok)throw new Error(await authErr(r));syncStatus={ok:true,text:'Saved to your account'};}catch(e){syncStatus={ok:false,text:'Could not save to your account: '+e.message};toast(syncStatus.text);}}
-async function pullState(first){if(!session||deviceOnly()||!hasBackend())return;try{const r=await authFetch(`/rest/v1/pantries?user_id=eq.${session.uid}&select=doc`);if(!r.ok)throw new Error(await authErr(r));const rows=await r.json();
+async function pullState(first){if(!session||deviceOnly()||!hasBackend()||tourSnap)return;try{const r=await authFetch(`/rest/v1/pantries?user_id=eq.${session.uid}&select=doc`);if(!r.ok)throw new Error(await authErr(r));const rows=await r.json();
   if(!rows.length){if(state&&(state.setup||Object.keys(state.items).length))await pushState();return;}
   const remote=rows[0].doc;if(!remote||!remote.items)return;
   if(first||!state.rev||(remote.rev&&remote.rev>state.rev)){const same=state&&state.rev===remote.rev;state=normalize(remote);saveLocalOnly();syncStatus={ok:true,text:'Up to date'};if(!same){render();if(!first)toast('Updated from your account');}}
@@ -1043,7 +1048,7 @@ function renderMore(al){const groups=[['out','Out of stock'],['low','Running low
     <div class="row"><button data-act="export">Export backup</button><button data-act="import">Import backup</button><input type="file" id="importFile" accept="application/json" class="sr"><button data-act="rerun">Re-run setup</button>${deviceOnly()&&hasBackend()?'<button data-act="logout">Create or log in to an account</button>':'<button data-act="logout">Log out</button>'}<button class="danger" data-act="reset">Start over</button></div></div></div>`;}
 
 /* ============================================================ dialogs */
-const dlg=()=>$('#dlg');function openDialog(h){$('#dlgBody').innerHTML=h;if(!dlg().open)dlg().showModal();}function closeDialog(){if(dlg().open)dlg().close();}
+const dlg=()=>$('#dlg');function openDialog(h){$('#dlgBody').innerHTML=h;if(!dlg().open){if(tourI>=0)dlg().show();else dlg().showModal();}}function closeDialog(){if(dlg().open)dlg().close();}
 function rotationControls(r){const c=rcat(r),id=r.id,M=state.meals;
   if(c==='Dinners')return `<label class="check"><input type="checkbox" data-act="meal" data-meal="dinner" data-role="mains" data-id="${id}" ${M.dinner.mains.includes(id)?'checked':''}><span>In my dinner rotation</span></label>`;
   if(c==='Lunches')return `<label class="check"><input type="checkbox" data-act="meal" data-meal="lunch" data-role="mains" data-id="${id}" ${M.lunch.mains.includes(id)?'checked':''}><span>In my lunch rotation</span></label>`;
@@ -1127,41 +1132,143 @@ function saveRecipe(){const f=$('#rf');if(!f.reportValidity())return;const fd=ne
   const i=state.customRecipes.findIndex(x=>x.id===id);if(i>=0)state.customRecipes[i]=rec;else{state.customRecipes.push(rec);if(!rec.yields){if(rec.cat==='Dinners')state.meals.dinner.mains.push(id);else if(rec.cat==='Lunches')state.meals.lunch.mains.push(id);else if(rec.cat==='Sides')state.meals.dinner.sides.push(id);else state.recipes[id]=1;}}
   save();closeDialog();toast(rec.yields?`Saved ${rec.n}`:`Saved ${rec.n} — its ingredients are now in your plan`);render();}
 
-/* ============================================================ tutorial (big card + spotlight on the real tile) */
-const TOUR=[{ic:'🥫',t:'Welcome to Shelf & Weeks',b:'A short tour. Each step opens the screen it describes, with its tab highlighted. Replay or turn it off any time under More.'},
- {view:'home',ic:'🏠',t:'Home',b:'Today\'s meals — the ones you said you make at home — plus a side. Each card shows what\'s planned, whether the pantry covers it, and how many servings will be left over.'},
- {view:'home',ic:'🔍',t:'Picking a meal',b:'An empty meal shows a search box. Type to find a recipe, or scroll the groups: Skip this meal (nothing planned, nothing used), Leftovers in the bank, Planned leftovers from a meal you\'ll cook earlier in the week, your recipes for that meal, other recipes, and Takeout / eat out — pick a saved place or add a new one. On a planned meal, "Something else" or "Change" opens the same search.'},
- {view:'home',ic:'🍳',t:'Cooking a meal',b:'Open a recipe to see the ingredient list measured for your batches, with ✓ for what\'s on hand. Batches to cook sets how many times you make it. "I made it" takes the ingredients out of the pantry and, if the recipe makes more than you eat, asks how many servings to save as leftovers. "Prep for later" cooks it and sends every serving to the leftover bank. "Add missing to shopping list" covers anything you lack.'},
- {view:'home',ic:'🥡',t:'Eating leftovers and takeout',b:'Tap Eat on a leftover meal and we ask how many servings are left to keep. Tap "We ate it" on takeout and we ask whether anything came home. Neither takes anything from the pantry, and both go into your history.'},
- {view:'plan',ic:'📅',t:'Plan the week',b:'A column per day with a menu for each meal you make at home. The menu holds the same choices as Home: leftovers, planned leftovers, your rotation, other recipes, takeout, or Skip. Under a recipe, Batches shows how many it makes, how many you eat and how many go to leftovers — raise it to cook extra on purpose. Days you leave open use the average of your rotation, so the shopping list stays sensible.'},
- {view:'recipes',ic:'🍳',t:'Recipes',b:'Your recipe list, grouped by category, with filters and a search. "What can I make now?" shows recipes the pantry covers. Each recipe\'s Edit list controls which meal rotation it belongs to and how often it comes up when a day isn\'t planned.'},
- {view:'recipes',ic:'📝',t:'Adding a recipe',b:'Tap "+ Add a recipe". Name and emoji are for the cards; Category decides which meal it\'s offered for (Breakfast, Lunches, Dinners, Sides, or your own); Priority ranks it when the pantry is tight; Servings it makes drives batches and leftovers. For each ingredient, search the list, type the amount exactly as your recipe says — fractions like 1 ½ are fine — and pick its unit; cups, tbsp, grams and more convert to the pantry unit automatically. Tick Optional for garnishes. Tick "produces a stocked item" for bread, sauces or stock you make and keep.'},
- {view:'recipes',ic:'🥫',t:'Adding an ingredient',b:'Anything not on our list you add once, either from "+ Add an ingredient" or straight from a recipe with "+ New ingredient". Unit is how you count it (lb, oz, can, each…), Per adult per week is how fast you use it outside recipes, Package is what you buy, Shelf life and Space let the app plan weeks of stock, and "Always keep stocked" keeps it on the list even when no recipe needs it.'},
- {view:'shop',ic:'🛒',t:'Shop',b:'On shopping day your list is ready, built from your weeks of stock plus the meals you planned. Select what you buy, change amounts if they differ, and Finish shopping puts it all in the pantry.'},
- {view:'pantry',ic:'🥫',t:'Pantry',b:'What you have against what the plan needs. Tap any target to change how much of that ingredient to keep on hand; + and − adjust counts and are logged in History.'},
- {view:'leftovers',ic:'🥡',t:'Leftovers',b:'Servings beyond what your household eats land here automatically, along with takeout leftovers and meal preps. "Coming up from your plan" lists leftovers your planned meals will create so you can schedule them before you cook. Plan them for any meal — they use nothing from the pantry.'},
- {view:'history',ic:'🕘',t:'History',b:'A timeline of what you ate and when — cooked, leftovers, takeout, meal preps — alongside every change to the pantry: shopping, cooking, and counts you edit by hand. Filter it to meals or pantry changes.'},
- {view:'more',ic:'⋯',t:'More',b:'Household size, which meals you make at home, planning and shopping days, storage space, theme, backups and your account. Replay this tour from here any time.'}];
-let tourI=-1,tourReturn='home';
-function startTour(){tourReturn=ui.view||'home';tourI=0;showTour();}
+/* ============================================================ tutorial
+   A guided walkthrough. While it runs, the app swaps in EXAMPLE data (a demo recipe, leftovers,
+   a takeout place, a planned week) so every screen has something to show. Nothing is saved or
+   synced during the tour, and your real pantry is put back the moment it ends.
+
+   Each step:  sec  = section label shown above the title
+               view = which tab to show
+               go   = (optional) what to open first — a recipe, a form, a menu
+               at   = what to spotlight (CSS selector, or a function returning an element / array of elements)
+               t, b = title and text  ← edit wording here
+*/
+const TD={dinner:'tour-demo-skillet',breakfast:'tour-demo-oats',lo:9000001,to:'Thai Garden (example)'};
+const T_=()=>iso(today()), T1=()=>iso(addDays(today(),1)), T2=()=>iso(addDays(today(),2));
+const q$=s=>document.querySelector(s), up=(el,sel)=>el?el.closest(sel):null;
+function openPick(ds,slot,text){ui.repick=ds+'|'+slot;render();const box=q$(`.mpick[data-date="${ds}"][data-slot="${slot}"]`);if(box){if(text)box.querySelector('.mpick-q').value=text;mpickList(box);}}
+const TOUR=[
+ {sec:'Welcome',ic:'🥫',t:'Welcome to Shelf & Weeks',b:'This tour walks through every part of the app on example meals and recipes. Your real pantry is safe — nothing you see here is saved, and everything goes back to normal when the tour ends. Use Next and Back, or Skip any time.'},
+
+ {sec:'Home',view:'home',ic:'🏠',t:'Home',at:()=>tourTarget('home'),b:'Home is your day at a glance: today\'s meals, leftovers waiting to be eaten, the week ahead, and when you next shop.'},
+ {sec:'Home',view:'home',ic:'☀️',t:'Today\'s meals',at:()=>q$('#view .section .stack'),b:'One card for each meal you make at home. Each shows what\'s planned — a recipe, leftovers, takeout, or skipped — and whether the pantry has what it needs.'},
+ {sec:'Home',view:'home',ic:'🍲',t:'A planned recipe',at:()=>up(q$(`#view [data-act="recipe"][data-id="${TD.dinner}"]`),'.mealcard'),b:'Tonight\'s dinner is an example recipe. The line underneath shows cook time, calories, how many batches you\'re making and how many servings will go to leftovers. "Open" shows the recipe; "Something else" swaps it out.'},
+ {sec:'Home',view:'home',ic:'🔍',t:'Choosing a meal',go:()=>openPick(T_(),'dinner'),at:()=>[q$('.mpick'),q$('.mpick-list')],b:'Tap "Something else" — or any empty meal — and you get this search. Type a few letters or scroll the groups: Leave open, Skip this meal, Leftovers, Planned leftovers, your rotation for this meal, other recipes, and Takeout / eat out.'},
+ {sec:'Home',view:'home',ic:'🥡',t:'Leftovers as a meal',at:()=>up(q$('#view [data-act="lo-eat"]'),'.mealcard'),b:'Today\'s lunch is leftovers from the bank. Eating leftovers takes nothing out of the pantry. Tap Eat when you\'re done.'},
+ {sec:'Home',view:'home',ic:'🥡',t:'How much is left?',go:()=>{const l=state.leftovers.find(x=>x.id===TD.lo);if(l)showLoEat(l,T_(),'lunch');},at:()=>q$('#dlgBody'),b:'After eating leftovers you\'re asked how many servings are still left. It\'s filled in with what remains after your household\'s usual portion — change it if you ate more or less.'},
+
+ {sec:'Cooking',view:'home',ic:'📖',t:'Opening a recipe',go:()=>showRecipe(TD.dinner,2),at:()=>q$('#dlg .ing'),b:'Ingredients are measured for the batches you\'re cooking and shown the way you entered them — cups, tbsp, lb — with the pantry amount beside it. ✓ means you have enough; red shows what\'s short.'},
+ {sec:'Cooking',view:'home',ic:'✖️',t:'Batches',go:()=>showRecipe(TD.dinner,2),at:()=>up(q$('#dlg [data-act="batches"]'),'.card'),b:'Batches to cook multiplies the recipe. The line below says how many servings that makes, how many your household eats, and how many go to the leftover bank.'},
+ {sec:'Cooking',view:'home',ic:'👩‍🍳',t:'The recipe buttons',go:()=>showRecipe(TD.dinner,2),at:()=>up(q$('#dlg [data-act="cooked"]'),'.row'),b:'"I made it" takes the ingredients out of the pantry. "Prep for later" cooks it now and puts every serving straight into leftovers — for meal prep. "Add missing to shopping list" covers anything you\'re short. "Put on today\'s menu" schedules it, and "Edit" opens the recipe form.'},
+ {sec:'Cooking',view:'home',ic:'❓',t:'Saving the extra',go:()=>showCookPrompt(recipe(TD.dinner),2),at:()=>q$('#dlgBody'),b:'When a recipe makes more than your household eats, "I made it" asks before saving the extra. The number is filled in for you; change it if some got eaten or given away, or tap No leftovers.'},
+
+ {sec:'Takeout',view:'home',ic:'🛍️',t:'Takeout or eating out',go:()=>showTakeoutPick(T_(),'dinner'),at:()=>q$('#dlgBody'),b:'Pick "Takeout / eat out" from any meal\'s search. Choose a place you\'ve saved, or type a new one and it\'s added to your list for next time. Nothing comes out of the pantry.'},
+ {sec:'Takeout',view:'home',ic:'🥡',t:'Bringing some home',go:()=>showTakeoutEaten(TD.to,T1(),'dinner'),at:()=>q$('#dlgBody'),b:'Tap "We ate it" on a takeout meal and you\'re asked whether anything came home. Those servings go to the leftover bank like any other.'},
+
+ {sec:'Plan',view:'plan',ic:'📅',t:'Plan the week',at:()=>tourTarget('plan'),b:'Plan shows the next seven days. On your planning day, set each day\'s meals here — the shopping list is built from what you plan.'},
+ {sec:'Plan',view:'plan',ic:'🗓️',t:'A day',at:()=>q$('#view .plan-day'),b:'Each day has a button for every meal you make at home, plus a side for dinner. The button shows what\'s planned; tap it to search and change it.'},
+ {sec:'Plan',view:'plan',ic:'🔍',t:'Searching in the plan',go:()=>openPick(T2(),'dinner','sk'),at:()=>[q$('.mpick'),q$('.mpick-list')],b:'Same search as on Home. Here we\'ve typed "sk" to find the skillet. Recipes say "ready" if the pantry covers them or "missing 2" if not.'},
+ {sec:'Plan',view:'plan',ic:'✖️',t:'Cooking extra on purpose',at:()=>up(q$('#view .plan-day [data-act="plan-b"]'),'.row'),b:'Under a recipe, Batches shows what it makes, what you eat, and what goes to leftovers. Raise it to cook double and eat the rest later in the week.'},
+ {sec:'Plan',view:'plan',ic:'🥡',t:'Planned leftovers',at:()=>q$(`#view .pslot[data-date="${T1()}"][data-slot="lunch"]`),b:'Tomorrow\'s lunch is leftovers from tonight\'s skillet — planned before it\'s even cooked. Once you tap "I made it" tonight, these turn into real leftovers automatically.'},
+ {sec:'Plan',view:'plan',ic:'⏭️',t:'Skipping a meal',at:()=>q$(`#view .pslot[data-date="${T2()}"][data-slot="breakfast"]`),b:'Not eating at home? Choose Skip this meal. Nothing is planned or taken from the pantry for it.'},
+ {sec:'Plan',view:'plan',ic:'⚡',t:'Fill and clear',at:()=>up(q$('#view [data-act="plan-fill"]'),'.row'),b:'"Fill from rotation" fills every open meal from your rotation in one tap. "Clear" empties the week. Days you leave open still count toward shopping using your rotation\'s average.'},
+
+ {sec:'Recipes',view:'recipes',ic:'🍳',t:'My recipes',at:()=>tourTarget('recipes'),b:'Every recipe you cook, grouped by category. Only recipes on your list appear in menus and on the shopping list.'},
+ {sec:'Recipes',view:'recipes',ic:'🔎',t:'Find and filter',at:()=>up(q$('#view [data-act="q"]'),'.row'),b:'Search by name, filter by category, or tap "What can I make now?" to see only recipes the pantry covers.'},
+ {sec:'Recipes',view:'recipes',ic:'📋',t:'Your rotation',go:()=>openDialog(rotationDialogHTML()),at:()=>q$('#dlgBody'),b:'Edit list sets which recipes belong to your breakfast, lunch and dinner rotation and how often they come up. Unplanned days and "Fill from rotation" draw from this list.'},
+ {sec:'Recipes',view:'recipes',ic:'➕',t:'Adding a recipe',go:()=>{ui.addOpen=true;render();},at:()=>q$('#view .addtiles'),b:'"+ Add recipe" gives two choices: write your own, or borrow one from our list and adjust it.'},
+
+ {sec:'Recipe form',view:'recipes',ic:'📝',t:'Name and category',go:()=>showRecipeForm(TD.dinner),at:()=>[up(q$('#rf [name="n"]'),'.grid3'),up(q$('#rf [name="cat"]'),'.grid3')],b:'Name and emoji are what you\'ll see on cards. Category decides which meal it\'s offered for — Breakfast, Lunches, Dinners, Sides, or one you create. Priority ranks recipes when the pantry is tight.'},
+ {sec:'Recipe form',view:'recipes',ic:'🍽️',t:'Servings',go:()=>showRecipeForm(TD.dinner),at:()=>up(q$('#rf [name="serves"]'),'.grid2'),b:'How many servings the recipe makes as written. This drives batches and leftovers: a 4-serving recipe for 2 people leaves 2 for later.'},
+ {sec:'Recipe form',view:'recipes',ic:'⚖️',t:'Ingredients, amounts and units',go:()=>{showRecipeForm(TD.dinner);updatePer();},at:()=>[...document.querySelectorAll('#ings .ingrow')].slice(0,2),b:'Each row is one ingredient. Type the amount exactly as your recipe says — fractions like 1/2 or 1 ½ work — and pick the unit: cups, tbsp, tsp, oz, lb, grams, liters, quarts and more. The line underneath shows the conversion to the pantry\'s unit.'},
+ {sec:'Recipe form',view:'recipes',ic:'🔍',t:'Searching ingredients',go:()=>{showRecipeForm(TD.dinner);const box=document.querySelectorAll('#ings .spick')[1];if(box){box.querySelector('.spick-q').value='ri';spickList(box);}},at:()=>{const box=document.querySelectorAll('#ings .spick')[1];return box?[box,box.querySelector('.spick-list')]:null;},b:'The ingredient box is a search. Type a few letters to narrow the list. If it isn\'t there, the last option adds it as a new ingredient using the name you typed.'},
+ {sec:'Recipe form',view:'recipes',ic:'🥖',t:'Recipes that stock the pantry',go:()=>showRecipeForm(TD.dinner),at:()=>up(q$('#rf [name="hasYield"]'),'label'),b:'Tick this for things you make and keep — bread, sauce, broth. Choose (or create) the pantry item it produces; cooking it adds to that item instead of to leftovers.'},
+
+ {sec:'Ingredients',view:'pantry',ic:'🥫',t:'Adding an ingredient',go:()=>showCustomForm(null,{n:'Sourdough bread (example)',made:true}),at:()=>up(q$('#cf [name="unit"]'),'.grid3'),b:'Unit is how you count it — lb, oz, can, each, loaf. "Per adult per week" is how much you use outside of recipes (0 if only recipes use it). Priority decides what\'s cut first when space is short.'},
+ {sec:'Ingredients',view:'pantry',ic:'📦',t:'Package and storage',go:()=>showCustomForm(null,{n:'Sourdough bread (example)',made:true}),at:()=>[up(q$('#cf [name="pkg"]'),'.grid3'),up(q$('#cf [name="vol"]'),'.grid3')],b:'Package size and name describe what you buy (1 loaf, 2 lb bag). Space and shelf life let the app plan how many weeks of stock fit and flag things before they expire.'},
+ {sec:'Ingredients',view:'pantry',ic:'✅',t:'Always keep stocked',go:()=>showCustomForm(null,{n:'Sourdough bread (example)',made:true}),at:()=>[up(q$('#cf [name="basic"]'),'label'),up(q$('#cf [name="made"]'),'label')],b:'"Always keep stocked" keeps it on the shopping list even if no recipe uses it. "Made from raw ingredients" marks things you can make at home instead of buying.'},
+
+ {sec:'Shop',view:'shop',ic:'🛒',t:'Shopping list',at:()=>tourTarget('shop'),b:'Built from your weeks of stock plus the meals you planned, sorted by aisle category with a cost estimate.'},
+ {sec:'Shop',view:'shop',ic:'☑️',t:'Checking things off',at:()=>q$('#view ul.shop li:not([style])')||q$('#view ul.shop'),b:'Tick what you buy and change the amount if it differs. When you\'re done, "Finish shopping" adds everything ticked to the pantry and logs it in History.'},
+
+ {sec:'Pantry',view:'pantry',ic:'🥫',t:'Pantry',at:()=>tourTarget('pantry'),b:'Everything you have against what your plan needs, with storage gauges for shelves, fridge and freezer.'},
+ {sec:'Pantry',view:'pantry',ic:'🎯',t:'An ingredient',at:()=>q$('#view .item'),b:'Each row shows what\'s on hand and the target. + and − adjust the count. Tap the name or target for details.'},
+ {sec:'Pantry',view:'pantry',ic:'⚙️',t:'Ingredient details',go:()=>showDetail('rice'),at:()=>q$('#dlgBody'),b:'Set exactly how much is on hand, override how much to keep or for how many weeks, set a price, and add an expiry date.'},
+
+ {sec:'Leftovers',view:'leftovers',ic:'🥡',t:'The leftover bank',at:()=>tourTarget('leftovers'),b:'Everything ready to eat: extra servings, meal preps and takeout that came home. Each shows how old it is — eat within 3–4 days.'},
+ {sec:'Leftovers',view:'leftovers',ic:'📅',t:'Planning leftovers',at:()=>up(q$('#view [data-act="lo-plan"]'),'div'),b:'"Plan it for…" puts a leftover dish on any upcoming meal. Eat eats a portion now; ✕ throws it out.'},
+ {sec:'Leftovers',view:'leftovers',ic:'🔮',t:'Coming up from your plan',at:()=>up(q$('#view [data-act="plo-plan"]'),'div')?.parentElement,b:'Leftovers your planned meals will create — schedule them for later days before you even cook.'},
+
+ {sec:'History',view:'history',ic:'🕘',t:'History',at:()=>tourTarget('history'),b:'The clock button in the top bar opens History.'},
+ {sec:'History',view:'history',ic:'📜',t:'What happened when',at:()=>q$('#view .card.flat'),b:'A timeline of meals — cooked, leftovers, takeout, meal preps — and every pantry change: shopping, cooking, hand edits. Filter to Meals or Pantry changes.'},
+
+ {sec:'More',view:'more',ic:'⋯',t:'More',at:()=>tourTarget('more'),b:'Settings, alerts, backups and your account.'},
+ {sec:'More',view:'more',ic:'🍳',t:'Meals at home',at:()=>up(q$('#view [data-set="mealsOn.breakfast"]'),'.row'),b:'Household size and which meals you make at home. Untick breakfast, say, and it disappears from Home and Plan.'},
+ {sec:'More',view:'more',ic:'🔁',t:'Replay this tour',at:()=>q$('#view [data-act="tour-start"]'),b:'Run this tour again any time from here.'},
+
+ {sec:'Done',ic:'🎉',t:'You\'re set',b:'That\'s everything. Your own pantry is back — the example meals and recipes are gone. Start by adding a few recipes, then plan the week.'}
+];
+
+let tourI=-1,tourReturn='home',tourSnap=null,tourUi=null;
+function tourSetup(){const t=T_(),d1=T1(),d2=T2();
+  const ing=(id,a,u,opt)=>{const s=staple(id);if(!s)return null;const q=toNative(parseAmt(a),u,s);return q?[id,Math.round(q*10000)/10000,!!opt,{a,u}]:null;};
+  state.customRecipes=state.customRecipes.filter(r=>!String(r.id).startsWith('tour-'));
+  state.customRecipes.push({id:TD.dinner,n:'Chicken & rice skillet (example)',e:'🍲',cat:'Dinners',tier:1,serves:4,time:35,yields:null,tags:[],
+    ings:[ing('chicken','1 1/2','lb'),ing('rice','1','cup'),ing('broth','2','cup'),ing('onions','1/2','cup'),ing('garlic-powder','1','tsp'),ing('olive-oil','1','tbsp',true)].filter(Boolean),
+    steps:'Brown the chicken in a deep skillet. Add onion and garlic, then stir in the rice and broth. Cover and simmer 20 minutes until the rice is tender.'});
+  state.customRecipes.push({id:TD.breakfast,n:'Overnight oats (example)',e:'🥣',cat:'Breakfast',tier:2,serves:2,time:5,yields:null,tags:[],
+    ings:[ing('oats','1','cup'),ing('milk','1','cup'),ing('honey','1','tbsp',true)].filter(Boolean),steps:'Stir together and refrigerate overnight.'});
+  state.mealsOn={breakfast:true,lunch:true,dinner:true};mealToggle('dinner','mains',TD.dinner,true);mealToggle('breakfast','mains',TD.breakfast,true);
+  [TD.dinner,TD.breakfast].forEach(id=>{const r=recipe(id);r.ings.forEach(([sid,q])=>{const o=it(sid);o.on=Math.max(o.on||0,q*6);});});
+  it('rice').on=Math.max(it('rice').on||0,2);
+  state.leftovers=state.leftovers.filter(l=>l.id!==TD.lo).concat([{id:TD.lo,n:'Chili (example)',e:'🌶️',servings:3,made:iso(addDays(today(),-1))}]);
+  if(!state.takeouts.includes(TD.to))state.takeouts.push(TD.to);
+  state.plan[t]={breakfast:TD.breakfast,lunch:'lo:'+TD.lo,dinner:TD.dinner,nb:{dinner:2}};
+  state.plan[d1]={lunch:'plo:'+t+'|dinner',dinner:'to:'+TD.to};
+  state.plan[d2]={breakfast:'skip',dinner:TD.dinner};
+  logMeal({how:'cooked',n:'Overnight oats (example)',e:'🥣',b:1,servings:2,lo:0,slot:'breakfast'});logStock('oats',-0.2,'Cooked Overnight oats (example)');
+  logMeal({how:'takeout',n:'Thai Garden (example)',e:'🛍️',lo:1,slot:'dinner'});logStock('rice',2,'Shopping');_demand=null;}
+function startTour(){if(tourI>=0)return;closeDialog();tourReturn=ui.view||'home';tourSnap=JSON.stringify(state);tourUi={q:ui.q,rcat:ui.rcat,rfilter:ui.rfilter,hfilter:ui.hfilter};ui.q='';ui.rcat='';ui.rfilter='';ui.hfilter='all';
+  try{tourSetup();}catch(e){console.error(e);}tourI=0;document.body.classList.add('touring');showTour();}
+function endTour(){const box=$('#tour');if(box)box.remove();['tourRing','tourBlock'].forEach(id=>document.getElementById(id)?.remove());document.body.classList.remove('touring');tourI=-1;
+  if(dlg().open)dlg().close();ui.repick=null;ui.addOpen=false;if(tourSnap){state=normalize(JSON.parse(tourSnap));tourSnap=null;_demand=null;}if(tourUi){Object.assign(ui,tourUi);tourUi=null;}ui.view=tourReturn;render();window.scrollTo(0,0);}
 function tourTarget(view){if(view==='more')return document.querySelector('.topbar .morebtn');if(view==='history')return document.querySelector('.topbar .histbtn');return document.querySelector(isMobile()?`.bottomnav [data-view="${view}"]`:`.topbar nav [data-view="${view}"]`);}
-function showTour(){document.querySelectorAll('.tour-spot').forEach(e=>e.classList.remove('tour-spot'));let box=$('#tour');
-  if(tourI<0||tourI>=TOUR.length){if(box)box.remove();tourI=-1;document.body.style.overflow='';document.body.classList.remove('touring');if(ui.view!==tourReturn){ui.view=tourReturn;render();}return;}
-  const s=TOUR[tourI];if(s.view&&ui.view!==s.view){ui.view=s.view;render();window.scrollTo(0,0);}
-  if(!box){box=document.createElement('div');box.id='tour';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');document.body.appendChild(box);}
-  document.body.style.overflow='hidden';document.body.classList.add('touring');
-  const el=s.view?tourTarget(s.view):null;if(el)el.classList.add('tour-spot');box.classList.toggle('scrim',!el);
+function tourEls(s){let r=null;try{r=typeof s.at==='function'?s.at():s.at?q$(s.at):null;}catch(e){r=null;}const a=(Array.isArray(r)?r:[r]).filter(x=>x&&x.getClientRects().length&&!x.hidden);return a;}
+function tourRect(els){const rs=els.map(e=>e.getBoundingClientRect());const top=Math.min(...rs.map(r=>r.top)),left=Math.min(...rs.map(r=>r.left)),bottom=Math.max(...rs.map(r=>r.bottom)),right=Math.max(...rs.map(r=>r.right));return {top,left,bottom,right,width:right-left,height:bottom-top};}
+function showTour(){if(tourI<0||tourI>=TOUR.length){endTour();return;}const s=TOUR[tourI];
+  if(dlg().open)dlg().close();ui.repick=null;ui.addOpen=false;
+  if(s.view&&ui.view!==s.view){ui.view=s.view;}render();if(s.view)window.scrollTo(0,0);
+  try{if(s.go)s.go();}catch(e){console.error(e);}
+  let block=document.getElementById('tourBlock');if(!block){block=document.createElement('div');block.id='tourBlock';document.body.appendChild(block);}
+  let ring=document.getElementById('tourRing');if(!ring){ring=document.createElement('div');ring.id='tourRing';document.body.appendChild(ring);}
+  let box=$('#tour');if(!box){box=document.createElement('div');box.id='tour';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');document.body.appendChild(box);}
   const last=tourI===TOUR.length-1;
-  box.innerHTML=`<div class="tour-card"><div class="row between" style="margin-bottom:.6em"><span class="tiny muted">${tourI+1} of ${TOUR.length}</span><button class="ghost small" data-act="tour-skip">${last?'Close':'Skip tour'}</button></div>
-    <div class="row nowrap" style="gap:.9em;align-items:center"><div class="tour-ic">${s.ic}</div><h2>${esc(s.t)}</h2></div><p>${esc(s.b)}</p>
-    ${el?`<div class="tiny" style="color:var(--green-deep);font-weight:700;margin:-.2em 0 .9em">${el.getBoundingClientRect().top<window.innerHeight/2?((s.view==='more'||s.view==='history')?'↑ highlighted in the top-right corner':'↑ highlighted in the menu above'):'↓ highlighted in the tab bar below'} — this is the ${esc(s.t)} screen behind</div>`:''}
-    <div class="tour-dots">${TOUR.map((_,i)=>`<span class="${i===tourI?'on':''}"></span>`).join('')}</div>
-    <div class="row nowrap" style="gap:.7em;margin-top:1em">${tourI>0?'<button class="big" data-act="tour-prev">Back</button>':''}<button class="big primary" style="flex:1" data-act="${last?'tour-skip':'tour-next'}">${last?'Get started':'Next'}</button></div></div>`;}
-document.addEventListener('keydown',e=>{if(tourI<0)return;if(e.key==='ArrowRight'&&tourI<TOUR.length-1){tourI++;showTour();}else if(e.key==='ArrowLeft'&&tourI>0){tourI--;showTour();}else if(e.key==='Escape'){tourI=-1;showTour();}});
-window.addEventListener('resize',()=>{if(tourI>=0)showTour();});
+  box.innerHTML=`<div class="tour-card"><div class="row between" style="margin-bottom:.5em;gap:.6em"><span class="tour-sec">${esc(s.sec||'')}</span><span class="tiny muted" style="margin-left:auto">${tourI+1} / ${TOUR.length}</span><button class="ghost small" data-act="tour-skip">${last?'Close':'Skip'}</button></div>
+    <div class="tour-prog"><i style="width:${(tourI+1)/TOUR.length*100}%"></i></div>
+    <div class="row nowrap" style="gap:.7em;align-items:center;margin-top:.7em"><div class="tour-ic">${s.ic||'✨'}</div><h2>${esc(s.t)}</h2></div><p>${esc(s.b)}</p>
+    <div class="row nowrap" style="gap:.6em">${tourI>0?'<button data-act="tour-prev">Back</button>':''}<button class="primary" style="flex:1" data-act="${last?'tour-skip':'tour-next'}">${last?'Finish':'Next'}</button></div></div>`;
+  requestAnimationFrame(()=>tourPlace(true));}
+function tourPlace(scroll){if(tourI<0)return;const s=TOUR[tourI];const box=$('#tour'),ring=document.getElementById('tourRing');if(!box||!ring)return;const els=tourEls(s);
+  if(!els.length){ring.className='none';ring.removeAttribute('style');box.className='mid';return;}ring.className='';
+  box.className='bot';const ch=box.querySelector('.tour-card').getBoundingClientRect().height+18;const H=window.innerHeight;
+  const inDlg=els[0].closest('dialog'),fixed=els[0].closest('.topbar,.bottomnav');
+  if(scroll&&!fixed){if(inDlg){els[0].scrollIntoView({block:'nearest'});}else{const r=tourRect(els);const topbar=(q$('.topbar')?.getBoundingClientRect().height||0)+12;if(r.top<topbar||r.bottom>H-ch){window.scrollTo(0,Math.max(0,window.scrollY+r.top-topbar));}}}
+  let r=tourRect(els);if(!inDlg&&r.bottom>H-ch&&r.top>ch)box.className='top';
+  const pad=6;ring.style.top=(r.top-pad)+'px';ring.style.left=(r.left-pad)+'px';ring.style.width=(r.width+pad*2)+'px';ring.style.height=(r.height+pad*2)+'px';}
+document.addEventListener('keydown',e=>{if(tourI<0)return;if(e.key==='ArrowRight'&&tourI<TOUR.length-1){tourI++;showTour();}else if(e.key==='ArrowLeft'&&tourI>0){tourI--;showTour();}else if(e.key==='Escape'){endTour();}});
+window.addEventListener('resize',()=>{if(tourI>=0)tourPlace(false);});
+window.addEventListener('scroll',()=>{if(tourI>=0)tourPlace(false);},true);
 
 /* ============================================================ events */
 function setDeep(path,val){const parts=path.split('.');let o=state;for(let i=0;i<parts.length-1;i++)o=o[parts[i]];o[parts[parts.length-1]]=val;}
+function showCookPrompt(r,b){const made=Math.round(b*servesOf(r)*10)/10;const rem=loFromBatches(r,b);
+  openDialog(`<div class="row between"><h2>${r.e} ${esc(r.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div><p>This recipe makes <b>${num(made,1)} servings</b> and ${householdLabel()} eat ${num(people(),1)}. Should I add <b>${num(rem,1)}</b> to the leftovers?</p>
+  <div class="row" style="align-items:center"><label style="margin:0">Servings to leftovers</label><input id="ckLo" type="number" min="0" max="${made}" step="0.5" value="${rem}" style="width:90px"></div>
+  <div class="row" style="margin-top:1em"><button class="primary" data-act="cook-go" data-id="${r.id}" data-b="${b}" data-yes="1">Yes, add them</button><button data-act="cook-go" data-id="${r.id}" data-b="${b}" data-yes="0">No leftovers</button><button class="ghost" data-act="dlg-close">Cancel</button></div>`);}
+function showLoEat(l,ds,slot){const keep=Math.max(0,Math.round((l.servings-people())*10)/10);
+  openDialog(`<div class="row between"><h2>🥡 ${esc(l.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div><p class="muted">There are ${num(l.servings,1)} serving${l.servings===1?'':'s'} in the bank and ${householdLabel()} usually eat ${num(people(),1)}. Any servings left to keep in leftovers?</p>
+  <div class="row" style="align-items:center"><label style="margin:0">Servings left</label><input id="loLeft" type="number" min="0" max="${l.servings}" step="0.5" value="${keep}" style="width:90px"></div>
+  <div class="row" style="margin-top:1em"><button class="primary" data-act="lo-eat-done" data-lo="${l.id}" data-date="${ds}" data-slot="${slot}">Done</button><button class="ghost" data-act="dlg-close">Cancel</button></div>`);}
 function doCook(r,b,x,prep){const c=recipeCheck(r,b);let L=null;const t=iso(today());const made=r.yields?0:Math.round(b*servesOf(r)*10)/10;x=Math.round((x||0)*10)/10;
   const ctx=ui.cookCtx&&state.plan[ui.cookCtx.ds]&&state.plan[ui.cookCtx.ds][ui.cookCtx.slot]===r.id?ui.cookCtx:null;const slot=ctx?ctx.slot:(SLOTS.find(k=>planFor(t)[k]===r.id)||null);
   if(x>0){L={id:Date.now(),rid:r.id,n:r.n,e:r.e,servings:x,made:t,prep:prep||undefined};state.leftovers.push(L);if(!prep)Object.keys(state.plan).forEach(d=>{const p=state.plan[d];SLOTS.forEach(k=>{const v=p[k];if(v&&String(v).startsWith('plo:')){const [sd,ss]=v.slice(4).split('|');if(sd<=t&&state.plan[sd]&&state.plan[sd][ss]===r.id)p[k]='lo:'+L.id;}});});}
@@ -1191,10 +1298,7 @@ document.addEventListener('click',e=>{document.querySelectorAll('.spick-list:not
     case 'pick-yes':case 'pick-no':{addToList(id,act==='pick-yes'?1:2);save();ui.pickSel=null;$('#pickList').innerHTML=pickListHTML();toast(`${recipe(id).n} added${act==='pick-yes'?' as essential':''}`);break;}
     case 'picker-done':ui.addOpen=false;if(ui.pickReturn){ui.pickReturn=false;openDialog(rotationDialogHTML());}else{closeDialog();render();}break;
     case 'dlg-add':{addToList(id,Number(el.dataset.tier)||2);save();showRecipe(id);toast(`${recipe(id).n} added to your list`);break;}
-    case 'lo-eat':{const l=state.leftovers.find(x=>String(x.id)===el.dataset.lo);if(!l)break;const keep=Math.max(0,Math.round((l.servings-people())*10)/10);
-      openDialog(`<div class="row between"><h2>🥡 ${esc(l.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div><p class="muted">There are ${num(l.servings,1)} serving${l.servings===1?'':'s'} in the bank and ${householdLabel()} usually eat ${num(people(),1)}. Any servings left to keep in leftovers?</p>
-      <div class="row" style="align-items:center"><label style="margin:0">Servings left</label><input id="loLeft" type="number" min="0" max="${l.servings}" step="0.5" value="${keep}" style="width:90px"></div>
-      <div class="row" style="margin-top:1em"><button class="primary" data-act="lo-eat-done" data-lo="${l.id}" data-date="${el.dataset.date||''}" data-slot="${el.dataset.slot||''}">Done</button><button class="ghost" data-act="dlg-close">Cancel</button></div>`);break;}
+    case 'lo-eat':{const l=state.leftovers.find(x=>String(x.id)===el.dataset.lo);if(!l)break;showLoEat(l,el.dataset.date||'',el.dataset.slot||'');break;}
     case 'lo-eat-done':{const l=state.leftovers.find(x=>String(x.id)===el.dataset.lo);if(!l)break;const left=Math.min(l.servings,Math.max(0,Number($('#loLeft')?.value)||0));const eat=Math.round((l.servings-left)*10)/10;l.servings=Math.round(left*10)/10;if(l.servings<=0.05)state.leftovers=state.leftovers.filter(x=>x!==l);logMeal({how:'leftovers',n:l.n,e:l.e||'🥡',servings:eat,slot:el.dataset.slot||null});markDone(el.dataset.date,el.dataset.slot);closeDialog();save();render();toast(l.servings>0.05?`Enjoy — ${num(l.servings,1)} serving${l.servings===1?'':'s'} of ${l.n} left`:`Enjoy — that's the last of the ${l.n.toLowerCase()}`);break;}
     case 'lo-toss':{state.leftovers=state.leftovers.filter(x=>String(x.id)!==el.dataset.lo);save();render();break;}
     case 'to-pick':{let n=el.dataset.new?($('#toName')?.value||'').trim():el.dataset.name;if(!n){toast('Type a name first');break;}const ex=state.takeouts.find(x=>x.toLowerCase()===n.toLowerCase());if(ex)n=ex;else state.takeouts.push(n);const ds=el.dataset.date,slot=el.dataset.slot;const p=state.plan[ds]||(state.plan[ds]={});p[slot]='to:'+n;if(p.nb)delete p.nb[slot];cleanPlan();save();closeDialog();render();toast(`Takeout from ${n} — nothing comes out of the pantry`);break;}
@@ -1216,9 +1320,7 @@ document.addEventListener('click',e=>{document.querySelectorAll('.spick-list:not
     case 'plan-clear':if(confirm('Clear the next 7 days of planned meals?')){for(let i=0;i<7;i++)delete state.plan[iso(addDays(today(),i))];cleanPlan();save();render();}break;
     case 'plan-today':{const r=recipe(id);const t=iso(today());const p=state.plan[t]||(state.plan[t]={});const slot=CAT_SLOT[rcat(r)]||'dinner';p[slot]=id;save();closeDialog();ui.view='home';render();toast(`${r.n} is on today's menu`);break;}
     case 'cooked':case 'prep':{const r=recipe(id);const b=Math.max(1,Number(el.dataset.b)||defaultBatches(r));const made=r.yields?0:Math.round(b*servesOf(r)*10)/10;const rem=loFromBatches(r,b);
-      if(act==='cooked'&&!r.yields&&rem>0){openDialog(`<div class="row between"><h2>${r.e} ${esc(r.n)}</h2><button class="ghost" data-act="dlg-close" aria-label="Close">✕</button></div><p>This recipe makes <b>${num(made,1)} servings</b> and ${householdLabel()} eat ${num(people(),1)}. Should I add <b>${num(rem,1)}</b> to the leftovers?</p>
-        <div class="row" style="align-items:center"><label style="margin:0">Servings to leftovers</label><input id="ckLo" type="number" min="0" max="${made}" step="0.5" value="${rem}" style="width:90px"></div>
-        <div class="row" style="margin-top:1em"><button class="primary" data-act="cook-go" data-id="${id}" data-b="${b}" data-yes="1">Yes, add them</button><button data-act="cook-go" data-id="${id}" data-b="${b}" data-yes="0">No leftovers</button><button class="ghost" data-act="dlg-close">Cancel</button></div>`);break;}
+      if(act==='cooked'&&!r.yields&&rem>0){showCookPrompt(r,b);break;}
       doCook(r,b,act==='prep'?made:rem,act==='prep');break;}
     case 'cook-go':{const r=recipe(id);const b=Math.max(1,Number(el.dataset.b)||1);const made=Math.round(b*servesOf(r)*10)/10;const lo=el.dataset.yes==='1'?Math.min(made,Math.max(0,Number($('#ckLo')?.value)||0)):0;doCook(r,b,lo,false);break;}
     case 'want':{const r=recipe(id);const c=recipeCheck(r,Number(el.dataset.b)||1);c.missing.forEach(x=>{state.wanted[x.id]=Math.max(state.wanted[x.id]||0,x.need-x.on);});save();closeDialog();ui.view='shop';render();toast('Added to the shopping list');break;}
@@ -1239,7 +1341,7 @@ document.addEventListener('click',e=>{document.querySelectorAll('.spick-list:not
     case 'cat-add':{const v=$('#newCat').value.trim();if(v&&!state.cats.includes(v)){state.cats.push(v);save();render();}break;}
     case 'cat-del':state.cats=state.cats.filter(c=>c!==el.dataset.cat);save();render();break;
     case 'rfilter':ui.rfilter=ui.rfilter==='can'?'':'can';render();break;
-    case 'tour-next':tourI++;showTour();break;case 'tour-prev':tourI--;showTour();break;case 'tour-skip':tourI=-1;showTour();break;case 'tour-start':startTour();break;
+    case 'tour-next':tourI++;showTour();break;case 'tour-prev':tourI--;showTour();break;case 'tour-skip':endTour();break;case 'tour-start':startTour();break;
     case 'export':{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`pantry-backup-${iso(today())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);break;}
     case 'import':$('#importFile').click();break;
     case 'reset':if(confirm('Delete the plan, pantry counts, meals and custom items for this account?')){state=fresh();save();ui.view='home';render();}break;
@@ -1281,3 +1383,4 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
+
