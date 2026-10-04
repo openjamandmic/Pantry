@@ -879,6 +879,9 @@ function showPicker(){openDialog(`<div class="row between"><h2>Choose from our r
 function isShopDay(){return iso(nextShopDate())===iso(today())&&state.lastShop!==iso(today());}
 function isPlanDay(){return today().getDay()===state.planDay;}
 function weekUnplanned(){let n=0;for(let i=0;i<7;i++)if(!dayPlanned(iso(addDays(today(),i))))n++;return n;}
+function weekOpenSlots(){const out=[];for(let i=0;i<7;i++){const ds=iso(addDays(today(),i));const p=planFor(ds);onMeals().forEach(m=>{if(!p[m])out.push({ds,slot:m});});}return out;}
+function weekCooks(){const out=[];for(let i=0;i<7;i++){const ds=iso(addDays(today(),i));const p=planFor(ds);SLOTS.forEach(k=>{const r=p[k]&&recipe(p[k]);if(r&&!isDone(ds,k))out.push({ds,slot:k,r,b:planBatches(ds,k)});});}return out;}
+function weekMissing(){const m={};weekCooks().forEach(x=>{recipeCheck(x.r,x.b).missing.forEach(y=>{const g=m[y.id]||(m[y.id]={s:y.s,need:0,for:new Set()});g.need=Math.max(g.need,y.need-y.on);g.for.add(x.r.n);});});return Object.values(m);}
 function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening';}
 function mealOptions(slot,ds,sel){const g=[];if(sel)g.push({label:'Clear',items:[{v:'',e:'🔄',n:slot==='side'?'No side / from rotation':'Leave open — use rotation',sub:'unplans this meal'}]});const want=SLOT_CAT[slot]||'Dinners';const mine=myRecipes();const byName=(a,b)=>a.n.localeCompare(b.n);
   if(slot!=='side'){g.push({label:'Not cooking',items:[{v:'skip',e:'⏭️',n:'Skip this meal',sub:'nothing planned, nothing used'}]});
@@ -919,7 +922,13 @@ function leftoverCard(l){const age=loAge(l);const chip=age>=4?'<span class="chip
 function renderHome(al,shop){const t=iso(today());const p=planFor(t);const can=cookable();const urgent=al.filter(a=>a.type!=='exp');const ns=nextShopDate();const daysTo=Math.round((ns-today())/DAY);
   let h=`<h1 class="greet">${greeting()}</h1><p class="muted">${fmtLong(today())}</p>`;
   if(isShopDay())h+=`<div class="card green" style="margin-top:1em"><div class="row between"><div><b>Shopping day</b><div class="muted tiny">${shop.length} item${shop.length===1?'':'s'} · roughly ${money(shop.reduce((a,x)=>a+x.cost,0))}</div></div><button class="small" data-act="view" data-view="shop" style="background:#fff;color:var(--green-deep);border-color:#fff">Open the list</button></div></div>`;
-  if(isPlanDay()||weekUnplanned()>=5)h+=`<div class="card flat" style="margin-top:1em"><div class="row between"><div><b>${isPlanDay()?'Planning day':'This week is mostly unplanned'}</b><div class="tiny muted">Set each day's ${onMeals().map(m=>SLOT_LABEL[m].toLowerCase()).join(', ')} — ${weekUnplanned()} of the next 7 days are open. Unplanned days use your rotation's average.</div></div><button class="small primary" data-act="view" data-view="plan">Plan the week</button></div></div>`;
+  const open=weekOpenSlots();
+  if(!open.length){const next=weekCooks()[0];const miss=weekMissing();const when=x=>`${x.ds===iso(today())?'Today':x.ds===iso(addDays(today(),1))?'Tomorrow':DOW[parseISO(x.ds).getDay()]} ${x.slot}`;
+    h+=`<div class="card flat" style="margin-top:1em"><div class="row between"><div style="flex:1;min-width:0"><b>You're all set — this week's meals have all been planned.</b>
+      ${next?`<div class="small" style="margin-top:.4em">Next up: <b>${next.r.e} ${esc(next.r.n)}</b> · ${when(next)}${next.r.yields?'':` · ${next.b} batch${next.b===1?'':'es'}`}</div>`:`<div class="small muted" style="margin-top:.4em">Nothing left to cook this week — it's all leftovers, takeout or skipped.</div>`}
+      ${miss.length?`<div class="tiny" style="margin-top:.4em;color:var(--red)">Missing for planned meals: ${miss.map(x=>`${x.s.e} ${esc(x.s.n)} <span class="muted">(${[...x.for].join(', ')})</span>`).join(' · ')}</div>`:`<div class="tiny muted" style="margin-top:.4em">The pantry covers every planned meal.</div>`}</div>
+      ${miss.length?`<button class="small primary" data-act="want-week">Add missing to list</button>`:next?`<button class="small primary" data-act="recipe" data-id="${next.r.id}" data-b="${next.b}" data-date="${next.ds}" data-slot="${next.slot}">Open</button>`:''}</div></div>`;}
+  else h+=`<div class="card flat" style="margin-top:1em"><div class="row between"><div><b>${isPlanDay()?'Planning day':'Plan the week'}</b><div class="tiny muted">${open.length} meal${open.length===1?'':'s'} over the next 7 days still need${open.length===1?'s':''} a plan — ${onMeals().map(m=>SLOT_LABEL[m].toLowerCase()).join(', ')}. Unplanned meals use your rotation's average.</div></div><button class="small primary" data-act="view" data-view="plan">Plan the week</button></div></div>`;
   h+=`<div class="section"><h2>Today</h2><div class="stack">${onMeals().map(m=>mealCard(SLOT_LABEL[m],p[m],t,m)).join('')}${(p.side||(p.dinner&&recipe(p.dinner)))&&state.mealsOn.dinner!==false?mealCard('Side',p.side,t,'side'):''}</div>
     ${myRecipes().length?'':`<div class="row" style="margin-top:.8em"><button class="soft" data-act="first-recipes">+ Add your first recipes</button></div>`}</div>`;
   h+=`${state.leftovers.length?`<div class="section"><button class="card flat block" data-act="view" data-view="leftovers" style="text-align:left;cursor:pointer;display:flex;align-items:center;gap:.8em"><span style="font-size:1.6rem">🥡</span><span style="flex:1"><b>${state.leftovers.length} leftover dish${state.leftovers.length===1?'':'es'} ready</b><span class="tiny muted" style="display:block">${state.leftovers.map(l=>esc(l.n)).slice(0,3).join(', ')}${state.leftovers.length>3?'…':''}</span></span><span class="small" style="color:var(--green-deep);font-weight:700">View ›</span></button></div>`:''}
@@ -1342,6 +1351,7 @@ document.addEventListener('click',e=>{document.querySelectorAll('.spick-list:not
       if(act==='cooked'&&!r.yields&&rem>0){showCookPrompt(r,b);break;}
       doCook(r,b,act==='prep'?made:rem,act==='prep');break;}
     case 'cook-go':{const r=recipe(id);const b=Math.max(1,Number(el.dataset.b)||1);const made=Math.round(b*servesOf(r)*10)/10;const lo=el.dataset.yes==='1'?Math.min(made,Math.max(0,Number($('#ckLo')?.value)||0)):0;doCook(r,b,lo,false);break;}
+    case 'want-week':{weekMissing().forEach(x=>{state.wanted[x.s.id]=Math.max(state.wanted[x.s.id]||0,x.need);});save();ui.view='shop';render();toast('Missing ingredients added to the shopping list');break;}
     case 'want':{const r=recipe(id);const c=recipeCheck(r,Number(el.dataset.b)||1);c.missing.forEach(x=>{state.wanted[x.id]=Math.max(state.wanted[x.id]||0,x.need-x.on);});save();closeDialog();ui.view='shop';render();toast('Added to the shopping list');break;}
     case 'copy-shop':{const t=shopText();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied')).catch(()=>openDialog(`<h2>Shopping list</h2><textarea style="min-height:300px">${esc(t)}</textarea><div class="row" style="margin-top:.6em"><button data-act="dlg-close">Close</button></div>`));break;}
     case 'shop-finish':shopFinish();break;
@@ -1403,6 +1413,7 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
+
 
 
 
