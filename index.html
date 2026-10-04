@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pantry">
 <meta name="theme-color" content="#2B74A3">
 <link rel="apple-touch-icon" href="pantry-icon.png">
@@ -77,7 +77,7 @@ hr{border:0; border-top:1px solid var(--line); margin:1.1em 0}
 
 /* shell */
 #app{min-height:100%; display:flex; flex-direction:column}
-body.shell::before{content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top,0px); background:var(--topnav,var(--nav,var(--bg))); z-index:21}
+body::before{content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top,0px); background:var(--topnav,var(--nav,var(--bg))); z-index:21}
 .topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--topnav,var(--nav,var(--bg))); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:.8em; padding:.7em 1.1em}
 .topbar .brand{display:flex; align-items:center; gap:.5em; font-weight:700}
 .topbar .brand i{width:28px; height:28px; border-radius:8px; background:var(--green); display:inline-grid; place-items:center; color:#fff; font-style:normal; font-size:1rem}
@@ -1399,5 +1399,6 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
+
 
 
