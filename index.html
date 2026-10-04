@@ -77,7 +77,8 @@ hr{border:0; border-top:1px solid var(--line); margin:1.1em 0}
 
 /* shell */
 #app{min-height:100%; display:flex; flex-direction:column}
-.topbar{position:sticky; top:0; z-index:20; background:var(--topnav,var(--nav,var(--bg))); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:.8em; padding:.7em 1.1em}
+body.shell::before{content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top,0px); background:var(--topnav,var(--nav,var(--bg))); z-index:21}
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--topnav,var(--nav,var(--bg))); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:.8em; padding:.7em 1.1em}
 .topbar .brand{display:flex; align-items:center; gap:.5em; font-weight:700}
 .topbar .brand i{width:28px; height:28px; border-radius:8px; background:var(--green); display:inline-grid; place-items:center; color:#fff; font-style:normal; font-size:1rem}
 .topbar nav{display:flex; gap:.2em; margin-left:1em}
@@ -742,7 +743,7 @@ function libraryCookable(){return RECIPES.map(r=>recipe(r.id)).filter(r=>!r.yiel
 /* ============================================================ shell */
 const VIEWS=[['home','Home','🏠'],['plan','Plan','📅'],['shop','Shop','🛒'],['recipes','Recipes','🍳'],['pantry','Pantry','🥫'],['leftovers','Leftovers','🥡']];
 const ALLVIEWS=VIEWS.map(v=>v[0]).concat(['more','history']);
-function render(){const th=state?.settings?.theme||'light';if(th==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.dataset.theme=th;
+function render(){const th=state?.settings?.theme||'light';if(th==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.dataset.theme=th;document.body.classList.toggle('shell',!!(session&&state&&state.setup));
   if(!session){ui.view='welcome';$('#app').innerHTML=renderWelcome();return;}
   if(!state.setup){$('#app').innerHTML=renderOnboarding();return;}
   if(!ALLVIEWS.includes(ui.view))ui.view='home';
@@ -1398,6 +1399,5 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
-
 
 
