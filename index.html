@@ -1099,20 +1099,34 @@ function planSlotHTML(ds,slot,cur){const key=ds+'|'+slot;if(ui.repick===key)retu
   return `<button type="button" class="pslot ${empty?'empty':''}" data-act="repick" data-date="${ds}" data-slot="${slot}"><span class="em">${empty?(SLOT_EMOJI[slot]||'🍽️'):pi.e}</span><span class="nm">${esc(txt)}</span><span class="chev">🔍</span></button>`;}
 function planBatchRow(ds,slot){const p=planFor(ds);const r=p[slot]&&recipe(p[slot]);if(!r||r.yields)return '';const b=planBatches(ds,slot);const lo=loFromBatches(r,b);return `<div class="row tiny" style="margin-top:.25em;gap:.35em;align-items:center;flex-wrap:wrap"><span class="muted">Batches</span><input type="number" min="1" step="1" value="${b}" data-act="plan-b" data-date="${ds}" data-slot="${slot}" style="width:54px;padding:.15em .3em;font-size:.85rem"><span class="muted">makes ${num(b*servesOf(r))} · eat ${num(people(),1)} · ${lo?`<b style="color:var(--green-deep)">${num(lo)} to leftovers</b>`:'no leftovers'}</span></div>`;}
 function renderPlan(){const days=[...Array(7)].map((_,i)=>addDays(today(),i));const src=loSources();
-  return `<div class="row between"><h1>Plan the week</h1><div class="row"><button class="small" data-act="plan-fill">Fill from my recipes</button><button class="small ghost" data-act="plan-clear">Clear</button></div></div>
+  return `<div class="row between"><h1>Plan the week</h1><div class="row"><button class="small primary" data-act="plan-fill">🎲 Generate random weekly plan</button><button class="small ghost" data-act="plan-clear">Clear</button></div></div>
   <p class="muted">Pick each day's meals — a recipe, leftovers, takeout or eating out, or skip a meal you won't be making. Days you leave open count as an average of your recipes, so the shopping list stays sensible either way. Planning day is ${DOW[state.planDay]}; <a href="#" data-act="view" data-view="more">change it in More</a>.</p>
   ${state.leftovers.length||src.length?`<div class="card flat" style="margin:.4em 0 1em"><b>🥡 Leftovers available</b><div class="row" style="margin-top:.4em;gap:.4em">${state.leftovers.map(l=>`<span class="chip good">${l.e||''} ${esc(l.n)} · ${num(l.servings,1)} serving${l.servings===1?'':'s'}</span>`).join('')}${src.map(x=>`<span class="chip">${x.r.e} ${esc(x.r.n)} · ${num(x.servings,1)} from ${srcLabel(x)}</span>`).join('')}</div><div class="tiny muted" style="margin-top:.4em">They're listed first in every meal menu below — planning them uses nothing from the pantry. Set the batches under a meal to cook extra on purpose.</div></div>`:''}
   <div class="plan-grid">${days.map(d=>{const ds=iso(d),p=planFor(ds);return `<div class="plan-day ${ds===iso(today())?'today':''}"><h3><span>${DOW[d.getDay()]}</span><span class="tiny muted">${fmt(d)}${iso(nextShopDate(d))===ds?' · 🛒':''}</span></h3>
     ${onMeals().map(m=>`<label class="tiny" style="margin:.5em 0 0">${SLOT_LABEL[m]}</label>${planSlotHTML(ds,m,p[m])}${planBatchRow(ds,m)}`).join('')}
     ${state.mealsOn.dinner!==false?`<label class="tiny" style="margin:.5em 0 0">Side</label>${planSlotHTML(ds,'side',p.side)}`:''}</div>`;}).join('')}</div>
   <div class="card flat" style="margin-top:1em"><b>My recipes</b><div class="tiny muted">The recipes these menus draw from. Every recipe on your list has its ingredients in the plan.</div><button class="small" data-act="rotation" style="margin-top:.5em">Edit list</button></div>`;}
-function planFill(){const M=state.meals;const pick=(arr,i)=>arr.length?arr[i%arr.length]:null;let di=0,li=0,si=0,bi=0;const start=Object.values(state.plan).length;
-  for(let i=0;i<7;i++){const ds=iso(addDays(today(),i));const p=state.plan[ds]||(state.plan[ds]={});const dow=addDays(today(),i).getDay();
-    const D=listByCat('Dinners').map(r=>r.id),L=listByCat('Lunches').map(r=>r.id),B=listByCat('Breakfast').map(r=>r.id),S=listByCat('Sides').map(r=>r.id);
-    if(state.mealsOn.dinner!==false&&!p.dinner&&D.length&&di<M.dinner.count){p.dinner=pick(D,start+di);di++;if(!p.side&&S.length)p.side=pick(S,start+si++);}
-    if(state.mealsOn.lunch!==false&&!p.lunch&&L.length&&li<M.lunch.count){p.lunch=pick(L,start+li);li++;}
-    if(state.mealsOn.breakfast!==false&&!p.breakfast&&B.length&&bi<M.breakfast.count){p.breakfast=pick(B,start+bi);bi++;}}
-  cleanPlan();save();render();toast('Week filled from your recipes — swap anything you like');}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+/* Generate a random week from the recipe list. Open meals only (what's already planned stays).
+   Leftovers are put to work: a cook that makes more than the household eats feeds the next day's
+   lunch first, then a dinner at least two days later — so they get eaten before they pile up. */
+function planGenerate(replace){const P=people();const M=state.meals;const days=[...Array(7)].map((_,i)=>iso(addDays(today(),i)));
+  if(replace)days.forEach(ds=>{const p=state.plan[ds];if(!p)return;SLOTS.forEach(k=>{if(!isDone(ds,k))delete p[k];});delete p.nb;if(!SLOTS.some(k=>p[k]))delete state.plan[ds];});
+  const pools={},done={};['Breakfast','Lunches','Dinners','Sides'].forEach(c=>{pools[c]=shuffle(listByCat(c).map(r=>r.id));done[c]=[];});
+  const take=(c,avoid)=>{let pool=pools[c];if(!pool.length&&done[c].length){pools[c]=pool=shuffle(done[c]);done[c]=[];}if(!pool.length)return null;let k=pool.findIndex(id=>id!==avoid);if(k<0)k=0;const id=pool.splice(k,1)[0];done[c].push(id);return id;};
+  const get=i=>state.plan[days[i]]||(state.plan[days[i]]={});const open=(i,slot)=>i>=0&&i<7&&onMeals().includes(slot)&&!get(i)[slot];
+  const used={breakfast:0,lunch:0,dinner:0};const cap=m=>used[m]<(M[m]?.count??7);
+  const spend=(fromI,key,servings)=>{let left=servings;if(left>=P-0.05&&open(fromI+1,'lunch')){get(fromI+1).lunch=key;left-=P;}for(let j=fromI+2;j<7&&left>=P-0.05;j++){if(open(j,'dinner')){get(j).dinner=key;left-=P;break;}}};
+  // leftovers already in the bank go first, into the nearest open lunch
+  state.leftovers.filter(l=>l.servings>=P-0.05).forEach(l=>{for(let i=0;i<3;i++){if(open(i,'lunch')){get(i).lunch='lo:'+l.id;break;}}});
+  let prevD=null,prevL=null,prevB=null;
+  for(let i=0;i<7;i++){const p=get(i);
+    if(open(i,'dinner')&&cap('dinner')){const id=take('Dinners',prevD);if(id){p.dinner=id;prevD=id;used.dinner++;const r=recipe(id);const lo=loFromBatches(r,defaultBatches(r));if(lo>0)spend(i,'plo:'+days[i]+'|dinner',lo);if(!p.side&&onMeals().includes('dinner')){const s=take('Sides');if(s)p.side=s;}}}
+    if(open(i,'lunch')&&cap('lunch')){const id=take('Lunches',prevL);if(id){p.lunch=id;prevL=id;used.lunch++;const r=recipe(id);const lo=loFromBatches(r,defaultBatches(r));if(lo>0)spend(i,'plo:'+days[i]+'|lunch',lo);}}
+    if(open(i,'breakfast')&&cap('breakfast')){const id=take('Breakfast',prevB);if(id){p.breakfast=id;prevB=id;used.breakfast++;}}}
+  days.forEach(ds=>{const p=state.plan[ds];if(p&&!SLOTS.some(k=>p[k]))delete state.plan[ds];});
+  cleanPlan();save();render();const lo=Object.values(state.plan).reduce((n,p)=>n+SLOTS.filter(k=>String(p[k]||'').startsWith('plo:')||String(p[k]||'').startsWith('lo:')).length,0);toast(`Week planned${lo?` — ${lo} meal${lo===1?'':'s'} of leftovers worked in`:''}. Swap anything you like.`);}
+function planFill(){const open=weekOpenSlots().length;if(!open){if(confirm('Every meal this week is already planned. Generate a fresh random week? Meals you have already cooked stay.'))planGenerate(true);return;}planGenerate(false);}
 
 /* ============================================================ shop */
 function renderShop(shop){const pd=periodDays();const sd=isShopDay();const ns=nextShopDate();const mk=toMake();const cost=shop.reduce((a,x)=>a+x.cost,0);let cat='';
@@ -1310,7 +1324,7 @@ const TOUR=[
  {sec:'Plan',view:'plan',ic:'✖️',t:'Cooking extra on purpose',at:()=>up(q$('#view .plan-day [data-act="plan-b"]'),'.row'),b:'Under a recipe, Batches shows what it makes, what you eat, and what goes to leftovers. Raise it to cook double and eat the rest later in the week.'},
  {sec:'Plan',view:'plan',ic:'🥡',t:'Planned leftovers',at:()=>q$(`#view .pslot[data-date="${T1()}"][data-slot="lunch"]`),b:'Tomorrow\'s lunch is leftovers from tonight\'s skillet — planned before it\'s even cooked. Once you tap "I made it" tonight, these turn into real leftovers automatically.'},
  {sec:'Plan',view:'plan',ic:'⏭️',t:'Skipping a meal',at:()=>q$(`#view .pslot[data-date="${T2()}"][data-slot="breakfast"]`),b:'Not eating at home? Choose Skip this meal. Nothing is planned or taken from the pantry for it.'},
- {sec:'Plan',view:'plan',ic:'⚡',t:'Fill and clear',at:()=>up(q$('#view [data-act="plan-fill"]'),'.row'),b:'"Fill from my recipes" fills every open meal from your recipe list in one tap. "Clear" empties the week. Days you leave open still count toward shopping as an average of your recipes.'},
+ {sec:'Plan',view:'plan',ic:'⚡',t:'Fill and clear',at:()=>up(q$('#view [data-act="plan-fill"]'),'.row'),b:'"Generate random weekly plan" fills every open meal from your recipe list, and puts leftovers to work: a dinner that makes extra feeds the next day\'s lunch, or a dinner two days later, so nothing piles up. "Clear" empties the week.'},
 
  {sec:'Recipes',view:'recipes',ic:'🍳',t:'My recipes',at:()=>tourTarget('recipes'),b:'Every recipe you cook, grouped by category. Everything on this list counts: its ingredients go into your plan and onto the shopping list automatically.'},
  {sec:'Recipes',view:'recipes',ic:'🔎',t:'Find and filter',at:()=>up(q$('#view [data-act="q"]'),'.row'),b:'Search by name, filter by category, or tap "What can I make now?" to see only recipes the pantry covers.'},
@@ -1554,10 +1568,3 @@ dlg().addEventListener('click',e=>{if(e.target===dlg()){closeDialog();render();}
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
